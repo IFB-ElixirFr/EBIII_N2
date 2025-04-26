@@ -26,7 +26,7 @@ params:
   brg1.bw: BRG1siCTRL_CHIP-seq.bw
   mitf.bw: MITF_CHIP-seq.bw
   sox10.bw: SOX10_CHIP-seq.bw
-  rnaseq: RNAseq_diff_norm.RData
+  rnaseq: RNAseq_diff_norm.rds
   #rnaseq: /DATA/WORK/Enseignement/2025_EBAII_ChIPseq/EBIII_N2/chip-seq/data/RNAseq/RNAseq_diff_norm.RData
   #rnaseq: ~//Documents/GitHub/EBAII/2023/ebaiin2/chip-seq/data/RNAseq/RNAseq_diff_norm.RData
   #rnaseq: /Users/elodiedarbo/Documents/enseignement/EBAII/2021/ebaiin2/chip-seq/data/RNAseq/RNAseq_diff_norm.RData
@@ -1371,7 +1371,11 @@ SOX10/MITF overlap significance as an example.
 
 ```{r permPeaks, warning=F,message=F,cache=T, fig.align = 'center'}
 # Prepare a pool of random peaks following the characteristics of our peak sets
-pool <- preparePool(txdb,peaks$SOX10,bindingType="TSS",featureType="transcript",seqn=paste0("chr",c(1:22,"X","Y")))
+pool <- preparePool(txdb,peaks$SOX10,
+                    bindingType="TSS",
+                    featureType="transcript",
+                    seqn=paste0("chr",c(1:22,"X","Y")))
+
 # Create the permPool object needed for peakPermTest
 pool <- new("permPool",grs=pool$grs[1],N=length(peaks$SOX10))
 SOX10.MITF <- peakPermTest(peaks$SOX10, peaks$MITF, pool=pool, seed=1, force.parallel=FALSE)
@@ -1623,7 +1627,7 @@ the TSS belong.
 
 ```{r}
 # load RNA-seq normalized expression data
-load(params$rnaseq) # RNAseq
+RNAseq <- readRDS(file.path(params$workdir, "data", "RNAseq", params$rnaseq)) # RNAseq
 head(RNAseq)
 ```
 
