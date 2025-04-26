@@ -8,6 +8,7 @@ output:
     use_bookdown: true
     thumbnails: true
     cards: false
+    code_folding: hide
 params:
   ensembl: 103
   assembly: hg38
