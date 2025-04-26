@@ -567,7 +567,7 @@ Show code: annotate BRG1 peaks
 
 </summary>
 
-```{r annotatePeaksBRG1, eval=TRUE, message=FALSE, include=TRUE}
+```{r annotatePeaksBRG1, eval=TRUE, message=FALSE, include=TRUE, cache=TRUE}
 ## Annotate peaks for all datasets and store it in a list
 ## Here TSS regions are regions -1000Kb/+100b arount TSS positions
 ## Peak annotations are stored in a list
@@ -809,7 +809,7 @@ Show code: create the matrix and display the heatmap
 
 </summary>
 
-```{r signalAroundBRG1center, message=FALSE, include=TRUE, fig.align = 'center'}
+```{r signalAroundBRG1center, message=FALSE, include=TRUE, fig.align = 'center', cache=TRUE}
 ## compute the density of peaks within the promoter regions
 tagMatrix <- getTagMatrix(peaks$BRG1, windows=extended.2K.BRG1)
 ## plot the density
@@ -946,7 +946,7 @@ Show code: Create the read enrichment matrix
 
 </summary>
 
-```{r prepareMatrix, message=FALSE, include=TRUE}
+```{r prepareMatrix, message=FALSE, include=TRUE, cache=TRUE}
 # load library
 library(ChIPpeakAnno)
 # featureAlignedSignal needs the coverage (cvg) stored in a list.
@@ -1072,7 +1072,7 @@ We will use here the clusters obtained with `EnrichedHeatmap` and look
 at the genomic distribution of peaks using
 `TxDb.Hsapiens.UCSC.hg38.knownGene` and `plotAnnoBar`.
 
-```{r clusterKmeans, warning=F,message=F, fig.align = 'center'}
+```{r clusterKmeans, warning=F,message=F, fig.align = 'center', cache=TRUE}
 # The following code uses each element of the list (peaks indexes)
 # to select corresponding peaks in the original data and return them
 BRG1.clusters <- lapply(clusters,function(x,peaks){
@@ -1278,7 +1278,7 @@ Show code: annotate the peaks
 
 </summary>
 
-```{r annotatePeaksAll, eval=TRUE, message=FALSE, include=TRUE, fig.align = 'center'}
+```{r annotatePeaksAll, eval=TRUE, message=FALSE, include=TRUE, fig.align = 'center', cache=TRUE}
 peakAnno[["MITF"]] = annotatePeak(peaks$MITF, tssRegion=c(-1000, 100), TxDb=txdb, annoDb="org.Hs.eg.db")
 peakAnno[["SOX10"]] = annotatePeak(peaks$SOX10, tssRegion=c(-1000, 100), TxDb=txdb, annoDb="org.Hs.eg.db")
 ```
@@ -1308,7 +1308,7 @@ plotAnnoBar(peakAnno)
 Overlaps between peak datasets can be evaluated using a Venn diagram.
 Such approach is implemented in the ChIPpeakAnno package.
 
-```{r ovlPeaks, include=TRUE, eval=TRUE,warning=F,message=F}
+```{r ovlPeaks, include=TRUE, eval=TRUE,warning=F,message=F, cache=TRUE}
 library(ChIPpeakAnno)
 # We first compute the overlap between peak sets, keeping the information
 # of all peaks overlapping in each set (see ?findOverlapsOfPeaks for help)
@@ -1330,7 +1330,7 @@ In our case we can refer to the genomic distribution of the peaks that
 we have plotted previously. We can assume that our TFs have a gene body
 binding preference. Genes cover roughly 10% of the genome.
 
-```{r defineHyperTot, include=TRUE, eval=TRUE,warning=F,message=F}
+```{r defineHyperTot, include=TRUE, eval=TRUE, warning=F, message=F}
 # Estimate the average size of the peaks ...
 averagePeakWidth <- mean(width(unlist(GRangesList(ovl$peaklist))))
 # ... to count how many potential sites could have been bound in coding regions.
@@ -1348,7 +1348,7 @@ if you are interested in finely customizing colors of your plots.
 
 <!-- ![R chart colours](/Users/elodiedarbo/Documents/file_general/R_chart_colors.png) -->
 
-```{r VennAnno, fig.width=7,fig.height=7,warning=F,message=F, fig.align = 'center'}
+```{r VennAnno, fig.width=7,fig.height=7,warning=FALSE,message=FALSE,results='hide', fig.align = 'center'}
 makeVennDiagram(ovl, totalTest=tot, connectedPeaks="keepAll",
                 fill=brewer.pal(3,"Set1"), # circle fill color
                 col=brewer.pal(3,"Set1"), #circle border color
@@ -1369,7 +1369,7 @@ ChIPpeakAnno provides the `preparePool` and `peakPermTest` functions to
 compute this test. These tests are made by pair, we will look at
 SOX10/MITF overlap significance as an example.
 
-```{r permPeaks, warning=F,message=F,cache=T, fig.align = 'center'}
+```{r permPeaks, warning=F,message=F,cache=T, fig.align = 'center', cache=TRUE}
 # Prepare a pool of random peaks following the characteristics of our peak sets
 pool <- preparePool(txdb,peaks$SOX10,
                     bindingType="TSS",
@@ -1456,7 +1456,7 @@ BRG1.mat <- lapply(sig, function(x){
 
 We use the partition we computed in section 2.7.2.2
 
-```{r TSSheatmapKmeans, message=F,warning=F, fig.align = 'center'}
+```{r TSSheatmapKmeans, message=F,warning=F, fig.align = 'center', cache=TRUE}
 # Define new colors for each heatmap
 col_sox10 <-colorRamp2(c(0,3,4), c("white", "blue","black"))
 col_mitf <- colorRamp2(c(0,4,5), c("white", "blue","black"))
@@ -1579,7 +1579,7 @@ TSS.mat <- lapply(sig, function(x){
 We will compute K-means clustering with `kmeans` function to define the
 partitions of the TSS based on BRG1 signal.
 
-```{r plotHeatmapTSS, message=FALSE, warning=FALSE, include=TRUE, fig.align = 'center'}
+```{r plotHeatmapTSS, message=FALSE, warning=FALSE, include=TRUE, fig.align = 'center', cache=TRUE}
 # Compute a partition using the kmeans function, asking for 5 clusters
 set.seed(20210526)
 partition.TSS = paste0("cluster", kmeans(TSS.mat$BRG1, centers = 5)$cluster)
@@ -1606,7 +1606,7 @@ draw(ht_list, split = partition.TSS, annotation_legend_list = list(lgd),
 
 Lets have a look at the TF binding profiles in cluster 4.
 
-```{r plotClustTSS, fig.align = 'center'}
+```{r plotClustTSS, fig.align = 'center', cache=TRUE}
 # For each matrix, filter peaks from cluster 5
 sig.tmp <- lapply(sig,function(x,part){
     mat <- x[part=="cluster4",]
@@ -1835,7 +1835,7 @@ We collect about 17,000 bed files deposited in GEO, user can use
 getGEOspecies to get a summary based on spieces.
 
 ```{r geospecies, message=F,warning=F}
-getGEOspecies()
+getGEOspecies()[1:25,]
 ```
 
 User can access the detail information by getGEOInfo, for each genome
