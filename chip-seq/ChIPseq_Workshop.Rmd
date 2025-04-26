@@ -30,7 +30,7 @@ params:
   #rnaseq: /DATA/WORK/Enseignement/2025_EBAII_ChIPseq/EBIII_N2/chip-seq/data/RNAseq/RNAseq_diff_norm.RData
   #rnaseq: ~//Documents/GitHub/EBAII/2023/ebaiin2/chip-seq/data/RNAseq/RNAseq_diff_norm.RData
   #rnaseq: /Users/elodiedarbo/Documents/enseignement/EBAII/2021/ebaiin2/chip-seq/data/RNAseq/RNAseq_diff_norm.RData
-  annot: annot.RData
+  annot: annot.rds
   #annot: "~/Documents/EBIII_N2/chip-seq/data/annot.RData"
   #annot: "~/Documents/GitHub/EBAII/2023/ebaiin2/chip-seq/data/annot.RData"
   #annot: "/Users/elodiedarbo/Documents/enseignement/EBAII/2021/ebaiin2/chip-seq/data/annot.RData"
@@ -1896,7 +1896,7 @@ closest genes if no other evidences are used).
 library(GenomicFeatures)
 
 ## Import BRG1 peaks annotated with Ensembl and Refseq annotation
-load(params$annot)
+annot <- readRDS(file.path(params$workdir, "data", params$annot))
 
 ## Here is how annotation data were downloaded
 # txdb.ensembl = makeTxDbFromGFF("data/ChIPseq/Homo_sapiens.GRCh38.103_UCSC_chr.gtf.gz")
