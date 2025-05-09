@@ -1,0 +1,28 @@
+---
+title: "GRanges_basics"
+author: "**Authors**: Elodie Darbo et Pascal Martin"
+date: "2025-05-09"
+output: 
+  rmdformats::material:
+    
+    use_bookdown: true
+    thumbnails: true
+    cards: false
+bibliography: references.bib
+editor_options: 
+  markdown: 
+    wrap: 72
+------
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, root.dir="/DATA/WORK/Enseignement/2025_EBAII_ChIPseq/EBIII_N2/chip-seq/")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(GenomicRanges)
+```
+
+
+# Introduction  
+
+
