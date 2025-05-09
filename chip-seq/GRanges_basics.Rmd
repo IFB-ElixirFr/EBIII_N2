@@ -1,7 +1,7 @@
 ---
-title: "GRanges_basics"
+title: "GRanges basics"
 author: "**Authors**: Elodie Darbo et Pascal Martin"
-date: "2025-05-09"
+date: "2025-04-26"
 output: 
   rmdformats::material:
     
@@ -12,7 +12,7 @@ bibliography: references.bib
 editor_options: 
   markdown: 
     wrap: 72
-------
+---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, root.dir="/DATA/WORK/Enseignement/2025_EBAII_ChIPseq/EBIII_N2/chip-seq/")
@@ -25,4 +25,426 @@ library(GenomicRanges)
 
 # Introduction  
 
+It is important to recognize that a large fraction of the data that we manipulate in genomics consists of genomic intervals.  
+A genomic interval is defined by:  
+
+  - a **chromosome** or contig  
+  - a **strand** (`+`, `-` or `*` for undefined)  
+  - a **start** position  
+  - an **end** position  
+  
+  
+In addition, the genomic interval can have **metadata** attached to it, such as a score, a % of GC or any number of quantitative or qualitative data.
+  
+Thus:
+
+  1) Ranges allow to represent a wide array of genomic data and annotations  
+  2) Several biological questions reflect range-based queries  
+
+ChIP-seq peaks, gene/exons/enhancer or any other annotations, localization of a motif or a particular sequence are obvious examples of genomic intervals.  
+But a read aligned to the genome, or a coverage along the genome can also be represented by genomic intervals.  
+  
+Indeed, many file formats directly contain genomic intervals:  
+
+  - `gtf/gff` files for annotations  
+  - `bed/bigBed` or `narrowPeak` and other ENCODE files for intervals  
+  - `bam/sam` files or `paf` files for aligned sequences  
+  - `vcf` files for variants  
+  
+Additionally, file formats containing coverages such as `bedgraph`, `wig` or `bigwig` files can also be represented as genomic intervals associated with a specific score.  
+
+Here are some questions that typically correspond to range-based queries:
+
+  - *Which peaks are unique to one condition and not present in the other (comparison of 2 ChIP-seq datasets)?*  
+      => `setdiff(peaks_condition1, peaks_condition2)` (Set operations)  
+
+  - *Which genes overlap with my ChIP-seq peaks?*  
+      => `findOverlaps(peaks, genes)` (Overlap query)  
+
+  - *What are the distances between my SNPs and the nearest transcription start site (TSS)?*  
+      => `nearest(snps, tss)` (Nearest-neighbor query)  
+
+  - *Which exons are fully contained with a given genomic region?*  
+      => `subsetByOverlaps(exons, region, type = "within")` (Containment query)  
+
+  - *Are their any enhancers with 5kb upstream of gene TSS?*  
+      => `findOverlaps(enhancer, promoters(gene, upstream=5000, downstream=0))` (Proximity-based overlap)  
+
+  - *What are the regions not covered by my ChIP-seq peaks?*  
+      => `gaps(peaks)` (Gap calculation)  
+
+  - *Which genetic variants intersect with coding regions?*  
+      => `intersect(variants, coding_regions)` (Set operations)
+
+  - *What are the sequences located within 250bp of my ChIP-seq peak summits?*  
+      => `getSeq(myBSgenome, resize(peaks, width=500, fix = "center"))` (Window normalization)  
+
+
+When manipulating genomic intervals, one of the most confusing aspect
+(together with dealing with poorly formatted gtf/gff files `r emo::ji("wink")`)
+is linked to the existence of two coordinate systems: **0-based** or **1-based**.  
+The figure below, extracted from this [post](https://www.biostars.org/p/84686/) summarizes the two systems:  
+
+![0-based vs 1-based coordinate systems in genomics](images/CoordinateSystem_0_or_1_based.png)
+To summarize:  
+
+  - **0-based**: start counting from 0, end is exclusive  
+  - **1-based**: start counting from 1, end is inclusive  
+  
+In [Bioconductor](https://www.bioconductor.org/), the **1-based** system is always used.  
+However:
+
+  - `bed` files use the 0-based system    
+  - `gtf/gff`, `sam/bam` or `vcf` files use the 1-based system  
+  
+Thus it is important, when you import/export your data to/from R/Bioconductor, that you use functions that are aware of these different standards.  
+We will see below that the [rtracklayer](https://www.bioconductor.org/packages/release/bioc/html/rtracklayer.html) package provides an interface to import/export most genomic file formats.  
+
+Bioconductor implements a number of tools to manipulate and analyze ranges and specifically genomic ranges [@pmid23950696]
+
+# IRanges and accessors
+Let's start with the simpler objects defined in the [IRanges](https://www.bioconductor.org/packages/release/bioc/html/IRanges.html) package.  
+An *IRanges* object is defined as follow: 
+
+  - defined by 2 vectors out of start, end, width (SEW ; $end = start + width - 1$)  
+  - closed intervals (i.e.\ include end points)  
+  - zero-width convention: $width \geq 0$ ; $end=start-1 \Leftrightarrow width=0$  
+  - can be named  
+  
+  
+A simple *IRanges*:
+```{r simple_IRanges, cache=TRUE}
+eg = IRanges(start = c(1, 10, 20),
+              end = c(4, 10, 19),
+              names = c("A", "B", "C"))
+eg
+```
+  
+  
+A bigger *IRanges*:
+```{r bigger_IRanges, cache=TRUE}
+set.seed(123) #For reproducibility
+start = floor(runif(10000, 1, 1000))
+end = start + floor(runif(10000, 0, 100))
+ir = IRanges(start, end)
+ir
+```
+  
+  
+*IRanges* accessors:
+```{r IRanges_accessors, cache=TRUE}
+length(ir)
+ir[1:4]
+start(ir[1:4])
+width(ir[1:4])
+names(eg)
+```
+  
+Other useful methods for *IRanges*:
+```{r IRanges_otherMethods, cache=TRUE}
+c(ir[1:2],ir[5:6]) #combining
+sort(ir[1:4])
+rank(ir[1:4],ties="first")
+mid(ir[1:4]) # midpoints
+tile(ir[1:2],n=2) #returns an IRangesList (see below)
+rep(ir[1:2],each=2)
+isNormal(ir[1:4])
+isNormal(sort(ir[1:4])) #see ?'Ranges-class' for Normality definition
+isDisjoint(ir[1:4])
+match(ir[1:4],ir[4:1]) #see ?'Ranges-comparison' for Ranges comparison methods
+ir[1:4]>ir[4:1] # compares ranges a) first by start and b) then by width 
+```
+  
+Other methods creating *IRanges*:
+```{r otherIRanges_functions, cache=TRUE}
+as(c(2:10,8,90:100),"IRanges") #from a vector of integers
+successiveIRanges(width=rep(10,5),gap=10)
+whichAsIRanges(c(19, 5, 0, 8, 5)>=5) #transforms a logical vector in IRanges
+```
+
+It can be convenient to group ranges in a list (e.g. exons grouped by genes). *IRangesList*
+objects serve this purpose.  
+Accessors and functions for *IRanges* generally work on *IRangesList* objects.  
+```{r IRangesList, cache=TRUE}
+irl=split(ir,width(ir)) # an IRangesList
+irl[[1]]
+start(irl)
+head(elementNROWS(irl)) # head(lengths(irl)) also works (with an "S" at the end of lengthS)
+```
+
+
+# intra- and inter-range operations  
+
+## Intra-range operations  
+  
+These operations apply on each range of an *IRanges* object:  
+```{r intra-range_ops, cache=TRUE}
+ir[1:2]
+shift(ir[1:2],shift=10)
+resize(ir[1:2],width=100,fix="start")
+flank(ir[1:2],width=100,start=T)
+narrow(ir[1:2],start=1,width=30) #here 'start' is relative
+ir[1:2]+10
+ir[1:2]-10
+ir[1:2]+c(0,10)
+ir[1:4]*-10 ; ir[1:4]*10 # acts like a centered zoom
+ir[1:2]*c(1,2) #zoom second range by 2X
+```
+  
+See `help('intra-range-methods',package="IRanges")` for more.  
+  
+## Inter-range operations  
+To illustrate these operations, we first build a function to plot ranges (from the [IRanges](https://www.bioconductor.org/packages/release/bioc/html/IRanges.html) vignette):
+```{r plotRanges_function, cache=TRUE}
+plotRanges <- function(x,
+                       xlim = x,
+                       main = deparse(substitute(x)),
+                       col = "black", sep = 0.5,
+                       cextitle=1, cexaxis=1, xaxis=T,...)
+{
+  height <- 1
+  if (is(xlim, "Ranges"))
+    xlim <- c(min(start(xlim)), max(end(xlim)))
+    bins <- disjointBins(IRanges(start(x), end(x) + 1))
+    plot.new()
+    plot.window(xlim, c(0, max(bins)*(height + sep)))
+    ybottom <- bins * (sep + height) - height
+    rect(start(x)-0.5, ybottom, end(x)+0.5, ybottom + height, col = col, ...)
+  if (xaxis)
+    (axis(1,cex.axis=cexaxis,padj=1))
+  title(main,cex.main=cextitle)
+}
+```
+  
+These inter-range operations, called *endomorphisms*, apply on a set of ranges and return a
+set of ranges:
+```{r inter-ranges_ops, cache=TRUE}
+#select some ranges in [1:100]:
+irs=ir[which(start(ir)<=100 & 
+               end(ir)<=100)[c(3:4,8,14,17:18)]] 
+irs
+reduce(irs)
+disjoin(irs)
+gaps(irs)
+coverage(irs)
+```
+See `help('inter-range-methods',package="IRanges")` for other methods.  
+  
+We can illustrate these methods with:
+```{r fig_inter-range_ops, include=TRUE, fig.align = 'center', fig.cap='Inter-range operations.'}
+par(mfrow=c(5,1), mar=rep(3,4))
+plotRanges(irs,xlim=c(0,100),xaxis=T, cextitle=2, cexaxis=1.5)
+plotRanges(reduce(irs),xlim=c(0,100),xaxis=T, cextitle=2, cexaxis=1.5)
+plotRanges(disjoin(irs),xlim=c(0,100),xaxis=T, cextitle=2, cexaxis=1.5)
+plotRanges(gaps(irs),xlim=c(0,100),xaxis=T, cextitle=2, cexaxis=1.5)
+plot(1:100,c(coverage(irs),rep(0,4)),type="l",axes=F,xlab="",ylab="",lwd=3)
+title(main="coverage",cex.main=2)
+axis(side=2,lwd=2,cex.axis=2,at=0:3,labels=0:3)
+axis(1,lwd=2,cex.axis=2,padj=1)
+```
+
+## Set operations
+See `help(’setops-methods’,package="IRanges")` for details.  
+The `union` and `intersect` functions for *IRanges*:  
+```{r setops_IRanges_unionintersect, cache=TRUE}
+union(irs[1:3],irs[4:6])
+intersect(irs[1:3],irs[4:6])
+```
+
+```{r fig_IRanges_setops_unionintersect, include=TRUE, fig.align = 'center', fig.cap='Inter-range operations.'}
+par(mfrow=c(4,1))
+ plotRanges(irs[1:3], xlim=c(0,100), xaxis=T, 
+            cextitle=2, cexaxis=1.5)
+ plotRanges(irs[4:6], xlim=c(0,100), xaxis=T, 
+            cextitle=2, cexaxis=1.5)
+ plotRanges(union(irs[1:3], irs[4:6]), xlim=c(0,100), xaxis=T, 
+            cextitle=2, cexaxis=1.5)
+ plotRanges(intersect(irs[1:3], irs[4:6]), xlim=c(0,100), xaxis=T, 
+            cextitle=2, cexaxis=1.5)
+```
+
+The `setdiff` function for asymmetric differences:  
+```{r setops_IRanges_setdiff, cache=TRUE}
+setdiff(irs[1:3],irs[4:6])
+setdiff(irs[4:6],irs[1:3])
+```
+
+```{r fig_IRanges_setops_setdiff,fig.align="center", fig.cap='Asymetric differences with setdiff on IRanges.'}
+par(mfrow=c(4,1))
+ plotRanges(irs[1:3],xlim=c(0,100),xaxis=T, cextitle=2, cexaxis=1.5)
+ plotRanges(irs[4:6],xlim=c(0,100),xaxis=T, cextitle=2, cexaxis=1.5)
+ plotRanges(setdiff(irs[1:3],irs[4:6]),xlim=c(0,100),xaxis=T, 
+            cextitle=2, cexaxis=1.5)
+ plotRanges(setdiff(irs[4:6],irs[1:3]),xlim=c(0,100),xaxis=T, 
+            cextitle=2, cexaxis=1.5)
+```
+
+The same functions can be applied in a parallel fashion (i.e. on the first elements of the
+provided *IRanges*, then on the second elements, etc.)
+```{r setops_IRanges_paralell, cache=TRUE}
+punion(irs[1:2],irs[4:5]) #element-wise (aka "parallel") union
+pintersect(irs[1:2],irs[4:5])
+psetdiff(irs[1:3],irs[4:6]) # asymmetric! difference
+pgap(irs[1:3],irs[4:6])
+```
+
+## Nearest methods
+
+See `help(’nearest-methods’,package="IRanges")` for details and examples:  
+```{r nearest_IRanges, cache=TRUE}
+nearest(irs[4:6],irs[1:3])
+distance(irs[4:6],irs[1:3])
+```
+We will se other examples on *GRanges* objects
+  
+  
+## Between ranges operations
+These are mainly methods to find overlaps between ranges.  
+These functions are examplified below with *GRanges* objects  
+See `help(’findOverlaps-methods’,package="IRanges")` for details.  
+  
+  
+
+# Run-length encoding (Rle)
+[Run-length encoding](http://en.wikipedia.org/wiki/Run-length_encoding) is a data compression method
+highly adapted to long vectors containing repeated values (e.g. coverage on a whole chromosome).  
+For example, the sequence $\{1,1,1,1,1,1,2,3,3\}$ can be represented as:  
+
+  - $values=\{1,2,3\}$  
+and the paired   
+  - $run lengths=\{6,1,2\}$.  
+  
+In [IRanges](https://www.bioconductor.org/packages/release/bioc/html/IRanges.html), the `Rle` class is used to represent run-length encoded (compressed) atomic vectors.
+
+*Rle* objects:
+```{r Rle_objects, cache=TRUE}
+set.seed(123)
+lambda = c(rep(0.001, 3500), #From IRanges vignette
+           seq(0.001, 10, length = 500), 
+            seq(10, 0.001, length = 500))
+xRle=Rle(rpois(1e4,lambda))
+yRle=Rle(rpois(1e4, lambda[c(251:length(lambda), 1:250)]))
+xRle
+yRle
+as.vector(object.size(xRle)/object.size(as.vector(xRle))) #Gain of memory
+head(runValue(xRle))
+head(runLength(xRle))
+head(start(xRle)) #starts of the runs
+head(end(xRle)) #ends of the runs
+nrun(xRle) #number of runs
+findRun(as.integer(c(100,200,300,1200)),xRle)
+coverage(irs)
+```
+
+These objects support the basic methods associated with R atomic vectors:  
+```{r Rle_operations, cache=TRUE}
+xRle+yRle
+xRle>0
+xRle>yRle
+max(xRle)
+summary(xRle)
+sqrt(xRle)
+rev(xRle)
+table(xRle)
+union(xRle,yRle)
+cor(xRle,yRle)
+```
+See `?’Rle-class’` and `?’Rle-utils’` for other methods.  
+  
+There are useful functions to perform fixed-width running window summaries:
+```{r Rle_runningWindow, cache=TRUE}
+runmean(xRle,k=100) # See ?'Rle-runstat' for other examples
+#same result, more flexible but much slower:
+Rle(aggregate(xRle, start = 1:(length(xRle)-99), width = 100, FUN = mean))
+runq(xRle,k=100,i=10) #10th smallest value in windows of 100
+```
+
+One typical application of *Rle* objects is to store the coverage of NGS reads along a chromosome.  
+The coverage for all chromosomes can be stored in an `RleList` object (see `?AtomicList` for details)
+in which each chromosome will be an *Rle* element of the list.  
+Most functions defined for *Rle* objects also work on *RleList* objects.  
+  
+Practically, any variable defined along a genome can be represented as  
+
+  - an `RleList` with one `Rle` for each chromosome
+or
+  - the `mcols` (metadata columns) of a `GRanges` object (see below)  
+
+Sometimes, it is desirable to manipulate several of these variables in the same object (e.g.
+for plotting with [Gviz](https://www.bioconductor.org/packages/release/bioc/html/Gviz.html)).  
+The `?genomicvars` help page provides useful functions such as
+`bindAsGRanges` and `mcolAsRleList` to switch from one representation to the other.  
+
+
+# Views
+As we mentioned when looking at the [Biostrings](https://www.bioconductor.org/packages/release/bioc/html/Biostrings.html) package, `Views` objects are used
+to store a sequence (a Vector object called the "subject") together with a set
+of ranges which define views onto the sequence.  
+Specific subclasses exist for different classes of "subject" Vectors, such as `RleViews` from the [IRanges](https://www.bioconductor.org/packages/release/bioc/html/IRanges.html)
+package and `XStringViews` from the [Biostrings](https://www.bioconductor.org/packages/release/bioc/html/Biostrings.html) package.  
+  
+An `RleViews` object stores an `Rle` subject and its views:
+```{r RleViews_create, cache=TRUE}
+coverage(irs)
+irs_views=Views(coverage(irs),start=c(-5,10,20,90),end=c(10,30,50,100))
+irs_views #Views can be out of bound
+try(irs_views[[1]]) #but can't be extracted
+irs_views[[2]]
+start(irs_views)
+```
+See `?’RleViews-class’` for details.
+  
+Other ways to create Views:  
+```{r RleViews_create2, cache=TRUE}
+Views(coverage(irs),irs[c(1,2,6)]) #use an IRanges to extract Views
+Views(coverage(irs),coverage(irs)>=1) #or a logical Rle
+slice(coverage(irs),3) #use slice
+successiveViews(coverage(irs),width=rep(20,4)) #get successive Views
+```
+
+Furthermore there is a `ViewsList` virtual class. Its specialized subclass `RleViewsList` is useful
+to store coverage vectors along with their specific views over a set of chromosomes.
+```{r RleViewsList, cache=TRUE}
+xyRleList=RleList(xRle,yRle)
+xyRleList_views=Views(xyRleList,
+                      IRangesList(IRanges(start=c(3700,4000),width=20),
+                                  IRanges(yRle>17)+2))
+xyRleList_views[[1]]
+xyRleList_views[[2]]
+width(xyRleList_views)
+```
+  
+Specific functions are provided for fast looping over `Views` and `ViewsList` objects:  
+```{r Views_looping, cache=TRUE}
+viewMins(irs_views) #same as min(irs_views)
+viewSums(irs_views) #same as sum(irs_views)
+viewWhichMaxs(irs_views) #get the (first) coordinate of viewMaxs 
+# (which.max also works)
+viewRangeMins(irs_views) #get the (first) range of viewMins
+viewApply(irs_views,sd)
+viewMeans(xyRleList_views)
+```
+Note that the `min` , `max` , `sum` , `mean` , `which.min` and `which.max` functions
+also work on `Views` (but not on `RleViewsList` yet).  
+The corresponding *view\** functions might be deprecated in thefuture.  
+See `?'view-summarization-methods'` for details.
+
+
+# GenomicRanges
+
+## GRanges objects
+
+## GRangesList
+
+## Annotations as GenomicRanges: TxDb\* packages
+
+## GRanges methods
+
+## Overlaps between ranges
+
+# More on annotation packages in Bioconductor
+
+# Import/export of genomic data
+
+# References
 
