@@ -96,7 +96,7 @@ Many genomes are available in [Bioconductor](https://www.bioconductor.org/packag
 But you can also build your own using the [BSgenomeForge](https://www.bioconductor.org/packages/release/bioc/html/BSgenomeForge.html) package.
 
 Let's load and check the dm3 BSgenome package:
-```{r, message = FALSE}
+```{r, message = FALSE, warning=FALSE}
 library(BSgenome.Dmelanogaster.UCSC.dm3)
 ```
 What is a bit confusing at the beginning is that loading this package creates an object named `Dmelanogaster`:
@@ -146,11 +146,177 @@ pwalign::pairwiseAlignment(dm3_upstream[[1]][1:30],
 ```
 
 
-# Searching for patterns in a sequence
+# Motifs and pattern matching
+
+[Sequence motifs](http://en.wikipedia.org/wiki/Sequence_motif) or patterns are typically used to represent the DNA regions bound by transcription factors (TFs) and other regulatory proteins.  
+We distinguish a **pattern** which is a sequence, possibly using the [IUPAC code](http://www.bioinformatics.org/sms/iupac.html) when there is an ambiguity between nucleotides, from a **motif** which is a matrix basically indicating what is the probablity to find a given nucleotide at a given position in the sequence.  
+There are several packages in [Bioconductor](https://www.bioconductor.org/) to search for and identify such patterns in strings and sequences. Pattern matching is frequently used in ChIP-seq experiments to search e.g. for binding sites of transcription factors.  
+A complete [Bioconductor workflow](http://bioconductor.org/help/workflows/generegulation/) illustrates the use of pattern matching for the identification of transcription factor binding sites.
+
+Here, we illustrate the use of the following packages:  
+
+  - [MotifDb](https://master.bioconductor.org/packages/release/bioc/html/MotifDb.html)  
+  - [seqLogo](https://master.bioconductor.org/packages/release/bioc/html/seqLogo.html)  
+  - [motifStack](https://master.bioconductor.org/packages/release/bioc/html/motifStack.html)  
+  - [TFBSTools](https://master.bioconductor.org/packages/release/bioc/html/TFBSTools.html)  
 
 
-# Searching for motifs in a sequence
+Other packages of interest include:  
 
+  - [rGADEM](https://master.bioconductor.org/packages/release/bioc/html/rGADEM.html) and [BCRANK](https://master.bioconductor.org/packages/release/bioc/html/BCRANK.html) for *de novo* motif discovery  
+  - [motifmatchr](https://master.bioconductor.org/packages/release/bioc/html/motifmatchr.html) for matching motifs from databases such as [JASPAR](https://jaspar.elixir.no/) to a set of sequences
+  - [universalmotif](https://master.bioconductor.org/packages/release/bioc/html/universalmotif.html) for import/export and comparison of motifs
+  - [motifbreakR](https://master.bioconductor.org/packages/release/bioc/html/motifbreakR.html) to evaluate the impact of SNPs on TF binding sites.
+
+You can search the [MotifDiscovery](https://master.bioconductor.org/packages/release/BiocViews.html#___MotifDiscovery) and [MotifAnnotation](https://master.bioconductor.org/packages/release/BiocViews.html#___MotifAnnotation) BioCViews to find other useful packages.
+
+## Searching and plotting motifs
+
+The [MotifDb](https://master.bioconductor.org/packages/release/bioc/html/MotifDb.html) package allows to query a collection of DNA motifs aggregated from different databases.
+```{r MotifDb_lib, eval=TRUE, echo=FALSE, message=FALSE,warning=FALSE}
+library(MotifDb)
+```
+
+We search these databases for the response element of the ecdysone receptor (EcR):
+```{r EcRmotif_query, cache=TRUE}
+EcRMotifs=MotifDb::query(MotifDb,"EcR")
+EcRMotifs
+EcRMotifs[[1]]
+```
+The motif is given as a Position Frequency Matrix (PFM), which, can be converted to a [Position-weight matrix](http://en.wikipedia.org/wiki/Position_weight_matrix) using the information present in the metadata of the object (number of sequences used to define the motif: see `elementMetadata(EcRMotifs)`).  
+
+The package [seqLogo](https://master.bioconductor.org/packages/release/bioc/html/seqLogo.html) allows to easily plot [sequence logos](http://en.wikipedia.org/wiki/Sequence_logo):
+```{r seqLogo_lib, eval=TRUE, echo=FALSE }
+require(seqLogo, warn.conflicts = FALSE, quietly = TRUE)
+require(motifStack)
+```
+
+Here is the logo of the first motif:
+```{r SeqLogo_Ecr,fig.cap="Sequence logo for EcR motif",fig.align="center"}
+seqLogo::seqLogo(EcRMotifs[[1]])
+```
+Or its reverse complement:
+```{r SeqLogo_Ecr_revcomp,fig.cap="Sequence logo for EcR motif reverse complement",fig.align="center"}
+seqLogo::seqLogo(reverseComplement(EcRMotifs[[1]]))
+```
+
+And the logo of the EcR motif retrieved from JASPAR 2022:
+```{r SeqLogo_EcrUsp,fig.cap="Sequence logo for EcR:Usp heterodimer",fig.align="center"}
+seqLogo::seqLogo(EcRMotifs[[4]])
+```
+The second motif (from [JASPAR](https://jaspar.elixir.no/)) represented above is a binding site for the heterodimer composed of the ecdysone receptor (EcR) and its binding partner Ultraspiracle protein (Usp). This imperfect palindromic ecdysone response element is an inverted repeat of the consensus motif AGGTCA (or AGTTCA) separated by 1 nucleotide (IR1 for "inverted repeat separated by 1 nucleotide").  
+
+The package [motifStack](https://master.bioconductor.org/packages/release/bioc/html/motifStack.html) provides additional plotting functionalities to plot multiple sequence logos, as illustrated below:
+```{r motifStack_Ecr,fig.cap="Sequence logos for EcR motifs using motifStack",fig.align="center"}
+#Format the PFMs:
+pfms <- as.list(EcRMotifs)
+names(pfms) <- gsub("Dmelanogaster-", "", names(pfms))
+pfms <- lapply(names(pfms),
+               function(x) {new("pfm",
+                                mat=pfms[[x]],
+                                name = x)})
+
+#Plot
+motifStack(pfms, layout="tree")
+```
+
+For those using [ggplot2](https://ggplot2.tidyverse.org/) for plotting, there is also the excellent [ggseqlogo](https://cran.r-project.org/web/packages/ggseqlogo/index.html) package.  
+  
+
+## Scanning a sequence with a Position-weight matrix
+A Position weight matrix (PWM) can be used to scan one or multiple "subject" sequences to search the location of the corresponding motif.  
+At each position, the "subject" sequence is given a score based on the values present in the PWM.
+
+![Principle of sequence scoring with a PWM](images/pwm_scores.png)
+
+We select the JASPAR2014 motif:
+```{r EcrJASP,cache=TRUE}
+EcrJASP <- EcRMotifs[[4]]
+```
+
+[MotifDb](https://master.bioconductor.org/packages/release/bioc/html/MotifDb.html) returns a PFM with columns summing to 1. The number of sequences used to build the PFM are available in the `elementMetadata` or `mcols` of the object. We use this information to obtain a PWM:
+```{r EcRJASP_2PWM, cache=TRUE}
+nseq <- as.integer(mcols(EcRMotifs[4])$sequenceCount)
+ecrpfm <- apply(round(nseq * EcrJASP,0), 2, as.integer)
+rownames(ecrpfm) <- rownames(EcrJASP)
+EcrJASP <- PWM(ecrpfm)
+```
+Here, we use the default background nucleotide frequencies (25% for each A, T, G and C) but this should be adapted depending on the genome studied.
+
+Search for this motif on both strands of chromosome 2L:
+```{r matchPWM_EcR_on2L, cache=TRUE, message = FALSE, warning=FALSE}
+EcRJASP_2L=matchPWM(EcrJASP,
+                    Dmelanogaster$chr2L,
+                    min.score='90%')
+EcRJASP_2L_rev=matchPWM(reverseComplement(EcrJASP),
+                        Dmelanogaster$chr2L,
+                        min.score='90%')
+#One way to merge the results:
+EcRJASP_2L_all <- Views(Dmelanogaster$chr2L,
+                        union(ranges(EcRJASP_2L),
+                              ranges(EcRJASP_2L_rev)))
+```
+
+We can use the `matchPWM` function to search a motif directly in a [BSgenome](https://master.bioconductor.org/packages/release/bioc/html/BSgenome.html) object.  
+In this case, the search is automatically done on both strands and the function returns a convenient *GRanges* object.
+```{r matchPWM_EcR_all, cache=TRUE, warning=FALSE}
+EcRJASP_all <- matchPWM(EcrJASP, Dmelanogaster, min.score="90%")
+EcRJASP_all
+```
+  
+  
+## TFBSTools  
+*TFBS* stands for Transcription Factor Binding Site.  
+The [TFBSTools](https://master.bioconductor.org/packages/release/bioc/html/TFBSTools.html) package [@pmid26794315] includes several features to manipulate and analyze sequence motifs or potential TFBS:  
+
+  - Containers for motifs (`XMatrix`), collections of motifs (`XMatrixList`), sets of motifs obtained with [MEME](https://meme-suite.org/meme/) (`MotifSet`) or from a motifSearch on a sequence (`SiteSet`)  
+  - Containers and graphical representations of [TFFM](https://github.com/wassermanlab/TFFM) (Transcription Factor Flexible Model), another type of motif representation [@pmid24039567]   
+  - Functions to convert between PWM (position-weight matrix), PFM (position frequency matrix) and ICM (information content matrix)  
+  - Functions to compare motifs as matrices (PFMs/PWMs) or with IUPAC strings  
+  - Functions to scan sequences or whole genome (`searchSeq`) and to scan aligned sequences (`searchAln`) or genomes (`searchPairBSgenome`)  
+  - Functions to query the [JASPAR](https://jaspar.elixir.no/) database, using [Bioconductor](https://www.bioconductor.org/) packages such as [JASPAR2024](https://master.bioconductor.org/packages/release/data/annotation/html/JASPAR2024.html)  
+  - Wrapper function for the *de novo* motif dicovery tool [MEME](https://meme-suite.org/meme/)  
+  
+![Common workflow and classes in TFBSTools [@pmid26794315]](images/TFBSTools_package.png)  
+  
+  
+We search for the EcR:Usp binding motif in JASPAR2018 database:
+```{r TFBSTools_JASPAR2018_lib, eval=TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+library(TFBSTools)
+library(JASPAR2018)
+```
+
+```{r EcR2024_fromJASPAR, cache=TRUE}
+EcR2018 <- TFBSTools::getMatrixByID(JASPAR2018, "MA0534")
+```
+
+Here is its sequence logo:
+```{r SeqLogo_Ecr2018,fig.cap="Sequence logo for EcR motif (JASPAR2018)",fig.align="center"}
+TFBSTools::seqLogo(toICM(EcR2018))
+```
+
+Compare EcR PWM with the PWM for a human nuclear receptor ESR1, the Drosophila CTCF or a randomly permuted PWM:
+```{r ComparaisonEcR, cache=TRUE}
+#hESR1:
+ESR1 <- TFBSTools::getMatrixByID(JASPAR2018, "MA0112")
+PWMSimilarity(toPWM(EcR2018), toPWM(ESR1), method = "Pearson")
+#dCTCF
+CTCF <- TFBSTools::getMatrixByID(JASPAR2018, "MA0531")
+PWMSimilarity(toPWM(EcR2018), toPWM(CTCF), method = "Pearson")
+#random permutation:
+PWMSimilarity(toPWM(EcR2018), toPWM(permuteMatrix(EcR2018)), method = "Pearson")
+```
+
+Search for EcR motif on chr2L:
+```{r Ecr2018_on2L, warning=FALSE, cache=TRUE}
+EcR2018_on2L <- searchSeq(toPWM(EcR2018), Dmelanogaster$chr2L, min.score="90%")
+```
+`searchPairBSgenome` is another interesting function that searches for a motif in regions that are conserved between 2 genomes given as *BSgenome* objects.  
+  
+  
+## Scanning sequences with strings  
+
+### Scanning multiple sequences with one string
 
 # Exporting as fasta
 
