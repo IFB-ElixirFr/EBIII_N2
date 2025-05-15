@@ -1,0 +1,66 @@
+---
+title: "EBAIIn2 - Intégration de données"
+author: Cathy Philippe
+format: revealjs
+editor: visual
+---
+
+# Rappels sur les méthodes factorielles
+
+comment on les utilise en pratique. Répondre aux questions des méthodes factorielles : combien de composantes choisir ? Comment interpréter une carte des individus et un cercle de corrélation ?
+
+# Présentation des données GliomaData
+
+## Le package gliomaData
+
+  * Téléchargez le package gliomaData : http://biodev.cea.fr/sgcca
+  * Installer le package avec la commande :
+  
+  `$ R CMD INSTALL gliomaData_0.4.tar.gz`
+
+``` r 
+library(tidyverse)
+library(gliomaData)
+data("ge_cgh_locIGR")
+GE <- ge_cgh_locIGR$multiblocks$GE
+summary(GE)
+dim(GE)
+CGH <- ge_cgh_locIGR$multiblocks$CGH
+dim(CGH)
+```
+## La localisation des gliomes malins pédiatriques
+::: {.r-stack}
+![](pHGG_loc.png)
+:::
+
+## Les données omiques disponibles
+![](pHGG_omics.png)
+## Le design d'intégration
+![](pHGG_design.png)
+
+## Questions
+
+### Emplacement de la tumeur (hémisphères, ligne médiane, tronc cérébral)
+  * Quels sont les gènes et les segments caractéristiques de chaque localisation, qui pourraient nous renseigner sur la cellule d'origine des tumeurs ?
+
+### Survie globale
+  * L'expression des gènes et les aberrations du nombre de copies ont-elles une influence sur la survie globale ? si oui, laquelle ? 
+
+### Améliorer la classification des gliomes malins pédiatriques, notamment son pouvoir pronostique.
+
+
+## Qu'est-ce qu'une méthode factorielle et surtout à quoi ça sert ?
+
+Lesquelles connaissez-vous ou avez-vous déjà utilisées ? UMAP, t-SNE, MDS, PCoA, ICA etc. Sondage (wooclap)
+
+## Exercice pratique "puzzle"
+
+associer les graphes de l'ACP des données d'expression de gliomaData avec leur définition
+
+1.  Correspondances (wooclap)
+
+2.  Graphe des pourcentages de variance expliquée (pour sélectionner le nombre de composantes principales optimal)
+
+3.  Carte des individus (pour en déduire des clusters de patients)
+
+4.  Cercle des corrélations (pour en déduire le lien entre gènes et groupes de patients). Oh non, on ne voit rien !!
