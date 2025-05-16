@@ -6,21 +6,322 @@ output:
   html_document:
     fig_caption: yes
     toc: true
-    toc_depth: 4
-  pdf_document:
-    fig_caption: yes
-    keep_tex: yes
-    toc: true
-    toc_depth: 3
+    toc_depth: 2
 ---
+
+<style>
+details {
+  background-color: #CDC5BF;
+}
+</style>
+
+<script>
+  // Move TOC to the Table of Contents heading (with id "table-of-contents")
+  $(function() {
+    $( "#TOC" ).insertAfter( $( "#table-of-contents" ) );
+  });
+</script>
+
 
 ```{r setup, include=FALSE}
 knitr::opts_knit$set(echo = TRUE,  root.dir="/Users/elodiedarbo/Documents/enseignement/EBAII/EBAII_2025n2/EBIII_N2/chip-seq/")
 ```
 
-# Introduction
+In this file, you will find some general tips that are very useful when starting programming with R.
 
-# The `apply` family
+#### Table of content {#table-of-contents}
+
+## Variable types
+
+#### primitive data type
+
+| Type Name / Value | R Function to Check | Description                                                   |
+|-------------------|---------------------|---------------------------------------------------------------|
+| Numeric           | is.numeric()        | Numbers with decimals (e.g., `3.14`)                          |
+| Integer           | is.integer()        | Whole numbers (e.g., `5L`)                                    |
+| Character         | is.character()      | Text or string data (single or double quoted)                 |
+| Logical           | is.logical()        | Boolean values: `TRUE` or `FALSE`                             |
+| NA                | is.na()             | Missing value; used to represent absence of data              |
+| NULL              | is.null()           | Empty object; represents "no object"/undefined                |
+| NaN               | is.nan()            | "Not a Number"; result of undefined mathematical operations   |
+| Inf / -Inf        | is.infinite()       | Positive or negative infinity (e.g., 1/0 or -1/0)             |
+
+**Notes**:
+
+`NA` is used for missing data and is type-aware (e.g., NA_integer_, NA_character_).
+
+`NULL` is different from NA: it represents no value at all, often used in lists or empty objects.
+
+`NaN` is a specific type of NA (i.e., `is.na(NaN)` is `TRUE`).
+
+`Inf` arises in operations like 1/0; it's a valid numeric value.
+
+#### Homogeneous data structures (Combine same type elements)
+
+| Structure | R Function to Check | Description                                                                 |
+|-----------|---------------------|-----------------------------------------------------------------------------|
+| Vector    | is.vector()         | A one-dimensional array of elements of the same basic type                 |
+| Factor    | is.factor()         | A special type of vector used to represent categorical data                |
+| Matrix    | is.matrix()         | A 2D structure with rows and columns, all elements must be of same type    |
+| Array     | is.array()          | A multi-dimensional (n ≥ 1) generalization of a matrix with same type data |
+
+
+<details>
+  <summary>**Examples**</summary>
+
+_vector_:
+```{r}
+# build vectors
+x <- c(3,2,0,5)
+y <- c("85",8,9)
+a <- seq(1,6,1)
+rep(y,3) # all elements were changed to character
+c <- 1:6
+# Extract elements
+x[2:3]
+# Manipulate
+a^2
+a + c # add values of elements at the same index
+```
+
+_factor_:
+```{r}
+# limited number of different values, encoded in integer
+data <- factor(c(3,2,0,5,3,2,0,5,3))
+as.integer(data)
+data==5
+data=="5"
+# sum(data) # Brings an error: 'sum' not meaningful for factors
+levels(data) <- c("bleu","jaune","rouge","gris")
+```
+
+_matrix_ and _array_:
+```{r, eval=FALSE}
+#In a general manner, to access the data:
+x2[indexes.dim1,indexes.dim2]
+x3[indexes.dim1,indexes.dim2,indexes.dim3]
+xN[indexes.dim1,indexes.dim2,indexes.dim3,...,indexes.DimN]
+```
+
+```{r}
+# create a matrix
+x2 <- matrix(1:12,nrow=4,ncol=3,byrow=TRUE)
+# check dimensions
+dim(x2) 
+row.names(x2)
+# Extract elements
+x2[3,2]
+x2[,2]
+# Manipulate
+x2 + x2
+
+# the vector contains 3 elements and will be added by element by row, it will be recycled
+x2 + c(3,2,5) 
+# x2[,1] <- c(3,2,5) # Error: ! number of items to replace is not a multiple of replacement length
+
+# create a 3 dimensional array
+x3 <- array(1:12,dim=c(2,2,3))
+# Extract elements
+x3[1,2,2]
+x3[1,2,] 
+```
+
+</details>
+
+
+#### Heterogeneous data structures (Can combine different type elements)
+
+| Structure   | R Function to Check | Description                                                                   |
+|-------------|---------------------|-------------------------------------------------------------------------------|
+| Data Frame  | is.data.frame()     | Like a table; each column is a vector of the same length, but types can vary |
+| List        | is.list()           | A generic container that can hold elements of different types and sizes       |
+
+<details>
+  <summary>**Examples**</summary>
+
+_data.frame_:
+```{r}
+# collection of vectors and/or factors constrained by column
+# create a data.frame
+firstNames <- c("Remy", "Lol", "Pierre", "Domi", "Ben")
+IMC <- data.frame(sex=c("H", "F", "H", "F", "H"),
+                  height=c(1.83,1.76,1.82,1.60,1.90),
+                  weight=c(67,58,66,48,75),
+                  row.names=firstNames)
+
+# check dimensions
+dim(IMC)
+colnames(IMC)
+
+# Extract elements
+IMC$height
+IMC[,"sex"]
+IMC["Remy",]
+IMC[3,2]
+
+```
+
+_list_:
+```{r}
+# very flexible, store everything
+# create a list
+list.ex <- list(one_vec=1:12,
+                one_name="Boo",
+                one_tab=matrix(1:4,nrow=2))
+
+# Extract elements
+list.ex$one_tab
+list.ex[[1]]
+# add new elements
+list.ex$new <- list(a="a",b="b")
+list.ex$new$a
+```
+
+</details>
+
+## Save and load R objects 
+
+`saveRDS()` and `readRDS()` are functions in R used to save and load single R objects. They are often used when you want to store an object (like a data frame, list, or function) to a file and retrieve it later — even under a different name.
+
+`saveRDS()` writes a single R object to a file.
+
+`readRDS()` reads that object back into R.
+
+They use the .rds file format and they work with one unnamed object at a time.
+
+_Basic Syntax_
+
+```{r, eval=FALSE}
+saveRDS(object, file = "file.rds", compress = TRUE)
+readRDS("file.rds")
+```
+
+
+_Key Arguments_:
+
+`object`: The R object you want to save.
+
+`file`: File path or connection to write the object.
+
+`compress`: Whether to compress the file (TRUE, "gzip", "bzip2", etc.).
+
+`ascii`: Save in ASCII format (mainly for readability or portability).
+
+`refhook`: Advanced; handles reference objects.
+
+**Notes**
+
+`saveRDS()` is ideal when you want to save one object at a time.
+
+Use `readRDS()` when you want to load the object into any variable name.
+
+.rds files are not designed for sharing across systems or languages — use .csv or .rds with caution if interoperability is needed.
+
+Other functions are classically used: `save()` and `load()`
+
+```{r, eval=FALSE}
+save(object, tab, otherthing, file = "file.RData")
+load("file.RData") 
+ls()
+[1] "object"  "tab" "otherthing" # all saved objects are loaded with names they wer given
+```
+
+
+| Function     | Saves Multiple Objects | Retains Object Names | File Type |
+|--------------|------------------------|-----------------------|-----------|
+| `save()`     | Yes                    | Yes                   | `.RData`  |
+| `saveRDS()`  | No                     | No                    | `.rds`    |
+
+## How to find help ?
+
+## How to build a function? {#fncbuild}
+
+Functions are essential components of the R programming language. They allow you to encapsulate code into reusable blocks, making your scripts more modular, readable, and easier to maintain.
+
+*Defining Functions*:
+
+A function in R has three main parts: the function name, arguments, and the function body.
+
+**Function name\***: A label that identifies the function and is used to call it.
+
+**Arguments**: The inputs passed to the function, defined within parentheses.
+
+**Function body**: The block of code that executes when the function is called, enclosed in curly braces {}.
+
+<details>
+  <summary>**\*** Function name's rules</summary>
+Choosing a variable name is important. It is recommended to make it **explicit**, **short**, and **unique**.
+
+It's best to maintain a consistent naming style throughout the script: variableName, variable_name, or variable.name (note that in some other languages, the dot is not allowed as it is used to call functions).
+
+**Rule 1**: A variable name cannot start with a number.
+
+**Rule 2**: It cannot contain special characters such as: & " ' / \ @ $ () [] {}, any mathematical operators, or punctuation marks.
+
+**Rule 3**: Variable names are case-sensitive: name ≠ Name.
+</details>
+
+![](images/build_functions.png){width=60%}
+_Basic Syntax_:
+
+```{r}
+myFunction <- function(arg) {
+  # Function body
+  result <- max(arg) - min(arg)
+  return(result)
+}
+```
+
+_Example_:
+
+Here's a simple example of how to define and use a function in R that adds two numbers:
+
+```{r}
+# Define the function
+add_numbers <- function(num1, num2) {
+  result <- num1 + num2
+  return(result)
+}
+
+# Call the function
+sum_result <- add_numbers(num1 = 5, num2 = 10)
+
+# Display the result
+sum_result
+```
+
+_Your turn_: Define a function that allows to return the average of two values and display a text: "The result of this treament is 49".
+
+**Tips**: Look at the help of the function `paste()` and its arguments. To display a text from within a function, you can use the function `print()` or `message()`.
+
+<details>
+  <summary>Solution</summary>
+  
+```{r}
+# Define the function
+av_numbers <- function(val1, val2){
+  res <- (val1 + val2)/2
+  print(paste("The result of this treament is",res))
+  message("The result of this treament is ",res)
+  return(res)
+}
+# Call the function
+mean_result <- av_numbers(val1 = 10, val2 = 20)
+
+# Display the result
+mean_result
+
+```
+
+The argument `x` takes each line (MARGIN=1) of `plant_height[,-c(1,2)]` and computes the difference between the maximum and minimum values.
+
+ </details>
+
+
+To go further you can check this [blog](https://www.geeksforgeeks.org/build-a-function-in-r/).
+
+
+## The `apply` family
 
 In this section, we will learn how to use the `apply` family of functions in R. These functions help you perform repetitive operations (e.g., `sum()`, `mean()`) on rows, columns, or elements of data structures like vectors, matrices, or data frames.
 
@@ -38,7 +339,7 @@ plant_height <- data.frame(indiv = LETTERS[1:10],
 ```
 
 
-## Functions from base
+#### Functions from base
 
 Imagine you want to know the average height at each time point. How would you do?
 
@@ -76,24 +377,70 @@ average_ind
 
 These functions are fast and convenient, but they work only in specific situations. What if we want to apply a different function, or calculate values by group?
 
-## The `apply()` function
+#### The `apply()` function
 
 The `apply` command allows  to apply any function across an array, matrix or data frame.
 
-![](images/apply_sketch.png)
+![](images/apply_sketch.png){width=60%}
 
-## The `sapply()` function
+_Basic Syntax_:
+
+```{r, eval=FALSE}
+apply(X,       # Array, matrix or data frame
+      MARGIN,  # 1: rows, 2: columns, c(1, 2): rows and columns
+      FUN,     # Function to be applied
+      ...)     # Additional arguments to FUN
+```
+
+_Example_:
+
+Compute the maximum height reached at each time point.
+
+```{r}
+# We need to select for numeric columns
+max_height_tp <- apply(X=plant_height[,-c(1,2)], MARGIN=2, FUN=max)
+
+# Display the result
+max_height_tp
+```
 
 
-## The `lapply()` function
+_Your turn_: How much plants have grown between 0 and 20h ? 
+
+**Tips**: You may need to build a function, see section [How to build a function?](#fncbuild).
+
+<details>
+  <summary>Solution</summary>
+  
+```{r}
+# build the function
+height_amplitude <- function(x){
+  growth <- max(x) - min(x)
+  return(growth)
+}
+
+# We need to select for numeric columns
+growth_height <- apply(X=plant_height[,-c(1,2)], MARGIN=1, FUN=height_amplitude)
+
+# Display the result
+growth_height
+```
+
+The argument `x` takes each line (MARGIN=1) of `plant_height[,-c(1,2)]` and computes the difference between the maximum and minimum values.
+
+ </details>
 
 
-## The `tapply()` function
+#### The `sapply()` function
 
 
-## The tidyverse solution
+#### The `lapply()` function
 
 
-# Save and load R objects 
+#### The `tapply()` function
+
+
+#### The tidyverse solution
+
 
 
