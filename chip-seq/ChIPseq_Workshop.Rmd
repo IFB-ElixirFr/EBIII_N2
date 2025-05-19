@@ -74,7 +74,7 @@ params <- list(workdir = "/DATA/WORK/Enseignement/2025_EBAII_ChIPseq/EBIII_N2/ch
               sox10.bw= "SOX10_CHIP-seq.bw",
               rnaseq= "RNAseq_diff_norm.RData",
               annot="annot.Rdata"
-)
+              )
 ```
 
 # Introduction
@@ -163,7 +163,7 @@ that data were normalized to 10M reads.
 We create a list containing the absolute paths to the data we will use
 along the practice and their file names.
 
-```{r, eval=F,echo=T}
+```{r, eval=FALSE, echo=TRUE}
 params <- list(
   chipseq= "/shared/projects/2315_ebaii_2/ChIPseq/data/ChIPseq/",
   mapping.chipseq= "stats_mappingChIPseq.tsv",
@@ -187,7 +187,7 @@ Peak files are in narrowPeak format which is of the form
 
 1.  chrom - Name of the chromosome (or contig, scaffold, etc.).
 2.  chromStart - The starting position of the feature in the chromosome
-    or scaffold. The first base in a chromosome is numbered 0.
+    or scaffold. The first base in a chromosome is numbered 0 (i.e. 0-based).
 3.  chromEnd - The ending position of the feature in the chromosome or
     scaffold. The chromEnd base is not included in the display of the
     feature. For example, the first 100 bases of a chromosome are
@@ -217,6 +217,8 @@ Peak files are in narrowPeak format which is of the form
 library(ChIPseeker)
 peaks <- list()
 peaks[["BRG1"]] <- readPeakFile(file.path(params$workdir,"data", "ChIPseq", params$brg1), as="GRanges")
+peaks[["MITF"]] <- readPeakFile(file.path(params$workdir,"data", "ChIPseq", params$mitf), as="GRanges")
+peaks[["SOX10"]] <- readPeakFile(file.path(params$workdir,"data", "ChIPseq", params$sox10), as="GRanges")
 peaks[["BRG1"]]
 ```
 
