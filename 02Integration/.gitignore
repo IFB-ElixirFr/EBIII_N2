@@ -1,0 +1,7 @@
+# Ignorer les fichiers système de macOS
+.DS_Store
+.Rproj.user
+# CP : j'ignore ce fichier
+02Integration.Rproj
+
+/.quarto/
