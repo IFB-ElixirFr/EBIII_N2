@@ -1010,185 +1010,430 @@ Heatmaps and average profiles are widely used representations of ChIP-seq data
 as they allow simultaneous visualization of read enrichment at various
 locations. For instance, one may want to represent reads related to a
 chipped protein in regions spanning +/-5Kb around all TSS of the
-reference genome. Another objective would be to compare read enrichment
+reference genome. Another objective could be to compare read enrichment
 at the same locations in many chip-seq datasets.
 
+<!-- illustration heatmap / average profiles -->
 
 
-### BRG1 peak distribution
+## Distribution of BRG1 peaks
 
 We want to know if BRG1 is binding large and/or narrow regions, unique
-and/or tandem etc.
+and/or tandem etc. So we will study the distribution of the BRG1 peaks that 
+have been called in a region spanning +/-2Kb around the peak centers.
+  
+First of all, for calculating the profile of ChIP peaks around the
+BRG1 peak center, we need to define BRG1 peak centers and extend them 2Kb 
+on each side. We will then select the 10000 best peaks using the q-value to get 
+a lighter matrix. Then, we need to "align" the peaks that are mapped to these
+regions, and thus generate a matrix with the different regions in row and the
+position around the peak centers in columns. The resulting matrix will be
+2000\*2+1 columns and 10000 rows.  
 
-First of all, for calculating the profile of ChIP peaks binding to the
-BRG1 center, we need to define peak centers and extend them each side.
-We will select the 10000 best q-value peaks (column V9) to lighten the
-matrix. Then (we need to) align the peaks that are mapped to these
-regions, and to generate the `tagMatrix`. The resulting matrix will be
-2000\*2+1 columns and 10000 lines which is quite big to display as a
-heatmap.
 
 Step by step:\
-- Compute the center of BRG1 peaks using the GenomicRanges methods
-`start` and `end`. Assign the results to a new column in metadata of the
-BRG1 peaks object.
+- Compute the centers of BRG1 peaks using the GenomicRanges `resize`` function.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: compute the peak centers
+Show code: compute the peak centers for BRG1
 
 </summary>
 
-```{r BRG1peakcenter, message=FALSE, include=FALSE, eval=FALSE, fig.align = 'center'}
-# Compute the center of the peaks and attribute it to a new
-# column in the metadata of the BRG1 peak GRanges
-peaks$BRG1$center.peak <- mid(peaks$BRG1)
+```{r BRG1peakcenters, message=FALSE, eval=TRUE, cache=TRUE}
+# Compute the centers of BRG1 peaks
+peak_centers_BRG1 <- resize(peakfilt$BRG1, width = 1, fix = "center")
 ```
+Note that the `mid` function applied to a *GRanges* object returns the centers
+of the ranges but as an integer vector, not a *GRanges* object.
 
 </details>
 
--   Sort the peaks in decreasing `order` (column V9) and select the top
-    10,000.
+
+-   Now select the BRG1 peak centers that correspond to the 10,000 most 
+significant BRG1 peaks (based on qvalue)
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: order and select peaks
+Show code: Select peak centers for the top 10k peaks
 
 </summary>
 
-```{r BRG1peaktop10K, message=FALSE, include=FALSE, eval=FALSE, fig.align = 'center'}
+```{r BRG1peaktop10K, message=FALSE, eval=TRUE, cache=TRUE}
 # For computation and memory efficiency reasons,
-# we subset the top 10K peaks according to the FDR column (V9)
-top.10000 <- peaks$BRG1[order(peaks$BRG1$V9,decreasing=T)][1:10000]
+# we subset the top 10K peaks according to the qvalue
+top10k_BRG1 <- peak_centers_BRG1[order(peak_centers_BRG1$qvalue, decreasing = TRUE)][1:10000]
 ```
 
 </details>
 
--   Create a `GRanges` object containing genomic positions of the 10K
-    peak centers. You need to define `seqnames` and `ranges` in an
-    `IRanges` object: `IRanges(start,end)`.
+-   Create a `GRanges` object with the regions corresponding to +/-2kb around
+    these peak centers.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: Create GRanges object with peak center
+Show code: Create GRanges with +/-2kb around top10k BRG1 peak centers
 
 </summary>
 
-```{r BRG1peakcenterGR, message=FALSE, include=FALSE, eval=FALSE, fig.align = 'center'}
-# Generate peak center GRanges for the 10K top peaks
-centers.BRG1 <- GRanges(seqnames(top.10000),
-                        IRanges(start=top.10000$center.peak,
-                                end=top.10000$center.peak))
+```{r BRG1peakcenterGR, message=FALSE, eval=TRUE, cache=TRUE}
+# Generate GRanges of peak centers +/-2kb for the 10K top peaks
+top10k_BRG1_extend2kb <- top10k_BRG1 + 2000
+# Note that we could have obtained this GRanges for all peaks directly using:
+# BRG1_extend2kb <- resize(peakfilt$BRG1, width = 4001, fix = "center"))
 ```
 
 </details>
 
--   Extend the ranges each side of 2000 bp using the function `resize`.
-    Fill the parameters `width` and `fix`.
+
+### BRG1 heatmap and average profile with ChIPseeker
+
+First, we will use the functions available in the *ChIPseeker* package to
+generate the heatmap. Later, we will compare the results to those obtained with
+the *genomation* package.
+
+
+-   *ChIPseeker* actually requires that we generate the regions of interest 
+    (top10k BRG1 peak centers +/-2kb) using the `makeBioRegionFromGranges`.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: resize the peak regions
+Show code: prepare the "BioRegions" using ChIPseeker function
 
 </summary>
 
-```{r resizePeaks, message=FALSE, include=FALSE, eval=FALSE, fig.align = 'center'}
-# Extend each side of 2000 bp
-#extended.2K.BRG1 <- resize(centers.BRG1, width = width(centers.BRG1)+4000, fix = "center")
-# Lucie : rencontre des soucis avec getTagMatrix : Error in getTagMatrix(peaks$BRG1, windows = extended.2K.BRG1) :
-#windows should be made from getPromoters()/getBioRegion()/makeBioRegionFromGranges()
-extended.2K.BRG1 <- makeBioRegionFromGranges(centers.BRG1,by="peaks", type= "start_site", upstream = 2000, downstream = 2000)
-#Note that we could also make this GRanges using the functionalities of the GenomicRanges package:
-# extended.2K.BRG1 <- centers.BRG1 + 2000
+```{r top10kBRG1BioRegions, message=FALSE, eval=TRUE, cache=TRUE}
+BRG1_extend_2kb <- makeBioRegionFromGranges(top10k_BRG1,
+                                            by="peaks",
+                                            type= "start_site",
+                                            upstream = 2000,
+                                            downstream = 2000)
 ```
 
 </details>
 
--   You now have the regions you want to map the peaks to. Create the
+-   We now have the regions that we need to map the peaks to. Create the
     matrix using the `getTagMatrix` function and the parameter
-    `windows`. Display it with `tagHeatmap` and its parameters `xlim`
-    and `color` which correspond to the presence of peaks in the region.
+    `windows`.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: create the matrix and display the heatmap
+Show code: Create the matrix
 
 </summary>
 
-```{r signalAroundBRG1center, message=FALSE, eval=FALSE, include=FALSE, fig.align = 'center', cache=TRUE}
-## compute the density of peaks within the promoter regions
-tagMatrix <- getTagMatrix(peaks$BRG1, windows=extended.2K.BRG1)
-## plot the density
-#tagHeatmap(tagMatrix, xlim=c(-2000, 2000), color="red")
-tagHeatmap(tagMatrix)
+```{r tagMatrixAroundBRG1center, message=FALSE, warning=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## compute the coverage of peaks in these regions
+BRG1_tagmat <- getTagMatrix(peakfilt$BRG1, windows = BRG1_extend_2kb)
 ```
 
 </details>
 
-The regions are ordered relative to their peak enrichment.
-
-We can display a summary of the binding profiles by looking at the
-corresponding average profiles. This kind of profiles is much less
-greedy, we can thus extend a bit more (e.g. +/- 5000) from the peak
-centers redoing the previous steps. Definition of the regions have to be
-redone. Try to create the `GRanges` and the `tagMatrix`.\
+-   Now display the matrix with `tagHeatmap`.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: Extend 5000bp from TSS and create the matrix
+Show code: Display the heatmap
 
 </summary>
 
-```{r extend5000, message=FALSE, eval=FALSE, include=FALSE}
-# Extend from the peak center
-#extended.5K.BRG1 <- resize(centers.BRG1, width = width(centers.BRG1)+10000, fix = "center")
-#Lucie modif
-extended.5K.BRG1 <- makeBioRegionFromGranges(centers.BRG1,by="peaks", type= "start_site", upstream = 5000, downstream = 5000)
-
-## compute the density of peaks within the promoter regions
-tagMatrix <- getTagMatrix(peaks$BRG1, windows=extended.5K.BRG1)
+```{r tagHeatmap_BRG1, warning = FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## plot the heatmap
+tagHeatmap(BRG1_tagmat)
 ```
 
 </details>
 
-\
+We will see below that the rows have been reordered by their average signal
+(i.e. what you would get by using `rowMeans` on the tagMatrix).  
+  
+Here we used the centers of BRG1 peaks to define the regions of interest,
+so it is not surprising that peaks are nicely aligned on these centers and,
+because of the sorting applied to the rows, that wide peaks are at the top
+and narrower peaks at the bottom of the heatmap.
 
-Use the `plotAvgProf` function defining the `xlim` and setting the
-labels of the x and y axis.
+-   Now let's see how the distribution of peaks look around the TSS.
+    *ChIPseeker* provides an easy function to do this: `peakHeatmap`
+    that uses directly the *TxDb* object that we used previously.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: Plot the average profile of BRG1 binding
+Show code: Plot BRG1 peak distribution around the TSS
 
 </summary>
 
-```{r profileBRG1, include=FALSE, eval=FALSE, message=F, warning=F, fig.align = 'center'}
-# Plot the profile
-plotAvgProf(tagMatrix, xlim=c(-5000, 5000),
-            xlab="Distance to peak center", ylab = "Peak Count Frequency")
+```{r plotHeatmap_BRG1_TSS, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## plot the heatmap of BRG1 peaks around the TSS
+peakHeatmap(peakfilt$BRG1, TxDb=txdb, upstream=2000, downstream=2000)
+```
+
+</details>
+  
+  
+We can also display the average profile of BRG1 peaks across these regions.
+This corresponds to calculating the `mean` signal of each column of the
+matrix and plotting the result. So these "average profiles" are sometimes
+plotted above the heatmap.  
+
+In *ChIPseeker* we can do this on the *tagMatrix* object using the
+`plotAvgProf` function.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot the average profile of BRG1 peaks around their centers
+
+</summary>
+
+```{r plotAvgProf_BRG1, message=FALSE, eval=TRUE, fig.align = 'center', cache=TRUE}
+## compute the coverage of peaks in these regions
+plotAvgProf(BRG1_tagmat,
+            xlim=c(-2000, 2000),
+            xlab="Distance to peak center",
+            ylab = "Peak Count Frequency")
+```
+
+> **_NOTE:_**: this is especially useful when groups of regions have been
+> defined on the matrix, for example representing different binding profiles
+> of the factor.
+
+</details>
+
+
+### BRG1 heatmap with genomation
+
+Now let's see how to obtain similar results with the *genomation* package.
+
+Step by step:\
+- The equivalent of the `tagMatrix` function is `SignalMatrix`, but the latter
+  directly accepts a regular *GRanges* object to specify the windows / regions
+  of interest.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Prepare the matrix
+
+</summary>
+
+```{r ScoreMatrix_BRG1_peaks, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Prepare the matrix of BRG1 peaks across BRG1 peak centers +/-2kb
+sm_BRG1 <- ScoreMatrix(target = peakfilt$BRG1, windows = top10k_BRG1_extend2kb)
 ```
 
 </details>
 
-It looks like BRG1 is having several binding patterns but the binary
-nature of the signal (presence/absence of peaks) and row ordering do not
-allow us to appreciate them.
+- Plot the heatmap with `heatMatrix`.
 
-### Read enrichment in BRG1 peaks
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot the heatmap
+
+</summary>
+
+```{r heatMatrix_BRG1, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Plot the heatmap
+heatMatrix(sm_BRG1, xcoords = c(-2000, 2000))
+```
+
+</details>
+
+You notice that the heatmap doesn't look like the one generated by the
+*ChIPseeker* function `tagHeatmap`. This is because by default, the
+`heatMatrix` function does not reorder the rows. Since we have sorted the
+rows by decreasing qvalue, we can verify this by using the qvalue as a weight 
+when calculating the coverage of BRG1 peaks over the regions. This is done by
+using the `weight.col` argument in `ScoreMatrix`.
+
+- Color the coverage by qvalue using the `weight.col` argument in `ScoreMatrix`.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot the heatmap with qvalue as weight
+
+</summary>
+
+```{r heatMatrix_BRG1_qval, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Plot the heatmap using qvalue as weight
+heatMatrix(ScoreMatrix(target = peakfilt$BRG1, 
+                       windows = top10k_BRG1_extend2kb, 
+                       weight.col="qvalue"), 
+           xcoords = c(-2000, 2000))
+```
+
+</details>
+
+
+- Now use the `order` argument in `heatMatrix` to reorder the rows
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot the heatmap reordering the rows
+
+</summary>
+
+```{r heatMatrix_BRG1_order, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Plot the heatmap with reordered rows
+heatMatrix(sm_BRG1, xcoords = c(-2000, 2000), order = TRUE)
+```
+
+</details>
+
+Take a look at `?heatMatrix` and at the *genomation* vignette, there are other 
+useful arguments, for example to make groups or cluster rows.
+
+
+- Now let's plot the distribution of BRG1 peaks around the TSS using 
+  *genomation*. To do this, we will use the `gene` and `promoters` functions
+  on the *TxDb* object to extract the coordinates of the regions around the TSS.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Heatmap of BRG1 peaks around the TSS with *genomation*
+
+</summary>
+
+```{r heatMatrix_BRG1_TSS, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## we also add a confidence interval around the mean
+heatMatrix(ScoreMatrix(target = peakfilt$BRG1, 
+                       windows = promoters(genes(txdb),
+                                           upstream = 2000,
+                                           downstream = 2001)), 
+           xcoords = c(-2000, 2000),
+           order = TRUE)
+```
+Again, we notice that *ChIPseeker* function had filtered out all rows with 
+zero coverage around the TSS, while *genomation* function does not.
+
+</details>
+
+- *genomation* has the `plotMeta` function to create average profiles
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Make an average profile with genomation
+
+</summary>
+
+```{r plotMeta_BRG1, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Average profile with genomation
+## we also add a confidence interval around the mean
+plotMeta(sm_BRG1, xcoords = c(-2000, 2000), dispersion = "se")
+```
+
+</details>
+
+
+### Multiple heatmaps: comparing factors across identical regions
+
+Heatmaps are useful to compare the profiles obtained from different factors
+on the same regions. For examples, we could ask: How is the signal for BRG1
+and MITF distributed around SOX10 peaks. *genomation* has useful functions
+to analyse a list of several ChIP-seq results, provided as *GRanges* or
+*RleList* objects.
+
+Step by step:\
+- Get the +/-2kb regions around SOX10 peak centers.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Get +/-2kb regions around SOX10 peak centers
+
+</summary>
+
+```{r SOX10_extend2kb, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Obtain regions of interest (SOX10 peak centers +/- 2kb)
+SOX10_extend2kb <- resize(peakfilt$SOX10, width = 4001, fix = "center")
+```
+
+</details>
+
+- Use the `ScoreMatrixList` function to obtain the profiles of all factors in
+  these regions.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Get the ScoreMatrix for each factors
+
+</summary>
+
+```{r ScoreMatrixList_SOX10_centers, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Get the coverage of peaks for all factors around SOX10 peak centers
+sm_sox10peaks <-  ScoreMatrixList(target = peakfilt[c("SOX10", "BRG1", "MITF")], 
+                                  windows = SOX10_extend2kb)
+```
+
+</details>
+
+- Plot the heatmaps side by side using `multiHeatMatrix`.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot the 3 heatmaps side by side
+
+</summary>
+
+```{r multiHeatMatrix_SOX10_centers, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Get the coverage of peaks for all factors around SOX10 peak centers
+## We order the rows by the average signal across all matrices and use a common color scale for all heatmaps
+multiHeatMatrix(sm_sox10peaks, 
+                xcoords = c(-2000, 2000),
+                 order = TRUE,
+                common.scale = TRUE)
+```
+
+</details>
+  
+There seems to be little link between SOX10 and MITF binding but there is some
+link between BRG1 binding and SOX10
+
+
+## Read enrichment in regions of interest
+So far, we're only looking at heatmaps of peak presence/absence. Even if we 
+sort the regions by their intensity or by qvalue, this gives little 
+quantitative information on the actual links between the factors.  
+To dig into this, we will look at the coverage of reads, instead of peaks, 
+in specific regions.
+
+
+
+
+
+
+
+## Read enrichment in BRG1 peaks
 
 For computation and memory efficiency reasons, we are not going to
 analyse read coverage at the nucleotide resolution. The strategy is
