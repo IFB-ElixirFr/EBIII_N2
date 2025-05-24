@@ -1425,537 +1425,462 @@ So far, we're only looking at heatmaps of peak presence/absence. Even if we
 sort the regions by their intensity or by qvalue, this gives little 
 quantitative information on the actual links between the factors.  
 To dig into this, we will look at the coverage of reads, instead of peaks, 
-in specific regions.
+in specific regions.  
+  
+### Heatmap of BRG1 read coverage
+We will first look at the enrichment of reads from the BRG1 ChIP in regions 
+covering +/-5kb around BRG1 peak centers. Because this represent ~10kb regions
+we will create bins and summarize peak density within these bins.
 
-
-
-
-
-
-
-## Read enrichment in BRG1 peaks
-
-For computation and memory efficiency reasons, we are not going to
-analyse read coverage at the nucleotide resolution. The strategy is
-rather to compute coverage in equally sized windows (e.g. 20nt). We thus
-need to build a matrix composed of rows that are all BRG1 peaks and
-columns that contain read enrichment in all bins.
-
-This allows to consider a bigger set of peaks and covered region. We
-will now analyze the whole set of BRG1 peaks over 10Kb (+/- 5000bp). We
-will ask for a hundred bins each side of the center resulting in 200
-windows of 50 bp.
-
-#### Prepare the signal matrices
-
-We need to load bigwig files for all datasets that we want to visualize.
-Data are imported using a function from the `rtracklayer` package.
-
-\
-
-First, create the `GRanges` object containing centers of **all** the
-peaks and extend them each side of 5000 bp.
+Step by step:\
+- Get the +/-5kb regions around BRG1 peak centers (only the top10K peaks).
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: Create all peak center GRanges object and extend them
+Show code: Get +/-5kb regions around BRG1 peak centers
 
 </summary>
 
-```{r centersBRG15K, eval=FALSE, message=FALSE, include=FALSE}
-# # Generate peak center GRanges for all the peaks
-centers.BRG1 <- GRanges(seqnames(peaks$BRG1),
-                        IRanges(start=peaks$BRG1$center.peak,
-                                end=peaks$BRG1$center.peak))
-# Extend each side of 5000 bp
-#extended.5K.BRG1 <- resize(centers.BRG1, width = width(centers.BRG1)+10000, fix = "center")
-#Lucie modif
-extended.5K.BRG1 <- makeBioRegionFromGranges(centers.BRG1, by="peaks", type= "start_site", upstream = 5000, downstream = 5000)
+```{r extended.5K.BRG1, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Obtain regions of interest (BRG1 peak centers +/- 5kb)
+extended.5K.BRG1 <- top10k_BRG1 + 5000
 ```
 
 </details>
 
-We then load the `rtracklayer` library and import the read coverage from
-a bigWig file.
+- Import the read coverage for BRG1 ChIP.
 
-```{r loadBigwigs, eval=FALSE, message=FALSE, include=FALSE}
-# load the library
-library(rtracklayer)
-# load the bw file for BRG1
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Import the bigwig file for BRG1 using *rtracklayer* `import` function
+
+</summary>
+
+```{r cvg.BRG1, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Import BRG1 bigwig file as an RleList
 cvg.BRG1 <- import(file.path(params$workdir, "data", "ChIPseq", params$brg1.bw),
                       format = "BigWig",
                       which = extended.5K.BRG1,
                       as = "RleList")
 cvg.BRG1
 ```
+The read coverage is imported as an `RleList` where each element represents a
+chromosome and is a long vector of coverage values along this chromosome, 
+represented as a read-length encoded (`Rle`) vector.  
+Here, we used the *rtracklayer* `import` function but below we will also
+illustrate the `readBigWig` function from the *genomation* package.
 
-We can now create a matrix of read enrichment at the positions of
-interest with `featureAlignedSignal` from the `ChIPpeakAnno` package.
+</details>
 
-\
-
-Load the library and find the required parameters. Be careful to the
-type of the required objects.
+- Summarize the coverage in 200 bins.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: Create the read enrichment matrix
+Show code: Use the `SocreMatrixBin` function from *genomation* tu summarize the
+           coverage in 200 bins
 
 </summary>
 
-```{r prepareMatrix, message=FALSE, eval=FALSE, include=FALSE, cache=TRUE}
-# load library
-library(ChIPpeakAnno)
-# featureAlignedSignal needs the coverage (cvg) stored in a list.
-cvglist <- list(BRG1=cvg.BRG1)
-sig <- featureAlignedSignal(cvglists = cvglist, 
-                            feature.gr = centers.BRG1,
-                            n.tile = 200,
-                            upstream = 5000, downstream = 5000)
-dim(sig$BRG1)
+```{r smr_BRG1, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Obtain the matrix with 200 bins
+smr_BRG1 <- ScoreMatrixBin(target = cvg.BRG1, 
+                           windows = extended.5K.BRG1, 
+                           bin.num=200)
 ```
 
 </details>
 
-#### Create heatmaps
+- Plot the heatmap.
 
-Let's draw the heatmaps using the `EnrichedHeatmap` library. We need
-first to transform our enrichment matrix in an object readable for the
-`EnrichedHeatmap` function. We use the function `as.normalizedMatrix`
-for which many parameters need to be set. What do they control ?
+<details>
 
-```{r Heatmap, message=FALSE, eval=FALSE, include=FALSE, fig.align = 'center'}
-## Load the library
-library(EnrichedHeatmap)
-## Create a list of normalizedMatrix that is the input format
-## for EnrichedHeatmap
-mat1 <- list()
-mat1[["BRG1"]] <- as.normalizedMatrix(as.matrix(sig[["BRG1"]]),
-    k_upstream = 100,
-    k_downstream = 100,
-    k_target = 0,
-    extend = c(5000, 5000),
-    signal_name = names(sig[["BRG1"]]),
-    target_name = "Peak centers"
+<summary style="color: DarkCyan">
+
+Show code: Use the `heatMatrix` function to plot the heatmap
+
+</summary>
+
+```{r smr_BRG1_heatMatrix, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Plot the heatmap, ordering the regions by their average intensity
+heatMatrix(smr_BRG1, 
+           xcoords = c(-5000, 5000),
+           order = TRUE) 
+```
+
+</details>
+
+- A few extreme values in the matrix are generating a color scale that doesn't
+  allow us to visualize the majority of the data. Use the `winsorize` argument
+  in `heatMatrix` to correct the color scale.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Use the `winsorize` argument in `heatMatrix` to adjust the color scale
+
+</summary>
+
+```{r smr_BRG1_heatMatrix_winsorized, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Plot the heatmap, ordering the regions by their average intensity
+heatMatrix(smr_BRG1, 
+           xcoords = c(-5000, 5000),
+           winsorize = c(0, 99.9),
+           order = TRUE) 
+```
+
+</details>
+
+
+- Try the `scaleScoreMatrix` function from *genomation* to see the effect on
+  the heatmap
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot the heatmap of a scaled matrix
+
+</summary>
+
+```{r smr_BRG1_heatMatrix_scaled, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Plot the heatmap for the scaled matrix
+heatMatrix(scaleScoreMatrix(smr_BRG1), 
+           xcoords = c(-5000, 5000), 
+           order = TRUE) 
+```
+
+</details>
+
+- Identify different patterns of read coverage using the `clustfun`argument
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Use the `clustfun` argument to group the peaks based on their
+           patterns of read coverage by using k-means clustering (e.g. 5 groups)
+
+</summary>
+
+```{r smr_BRG1_heatMatrix_kmeans, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Make 5 groups of peaks based on the pattern of read coverage around the peaks
+set.seed(123) # for reproducibility since we're using k-means clustering
+heatMatrix(smr_BRG1, 
+           xcoords = c(-5000, 5000), 
+           winsorize = c(0, 99.9),
+           clustfun = function(x) kmeans(x, centers=5)$cluster) 
+```
+In practice we would probably prefer to perform the clustering outside of the
+call to the `heatMatrix` function. But when the `clustfun` argument is used,
+the function returns the clustering result so that we can reuse it for other
+analysis.  
+
+</details>
+
+### MultiHeatmap to compare read coverage of the 3 factors
+
+Now let's investigate the read coverage of the 3 factors around SOX10 peaks.
+We will choose a window of +/-3kb around SOX10 peaks and sort them by decreasing
+qvalue. We will also summarize the coverages across these regions using 300 bins.
+
+Step by step:\
+- Get the +/-3kb regions around SOX10 peak centers sorted by decreasing qvalues.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Get +/-3kb regions around sorted SOX10 peak centers
+
+</summary>
+
+```{r SOX10_extend3kb_sorted, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Obtain regions of interest (SOX10 peak centers +/- 2kb)
+SOX10_extend3kb_sorted <- resize(peakfilt$SOX10[order(peakfilt$SOX10$qvalue, decreasing = TRUE)],
+                                 width = 6001,
+                                 fix = "center")
+```
+
+</details>
+
+- Import the bigwig files for the 3 factors using the `readBigWig` function from
+  the *genomation* package.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Import read coverage for the 3 factors
+
+</summary>
+
+```{r import_readBigWig, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Import read coverage for the 3 factors
+cvg <- list()
+cvg[["SOX10"]] <- readBigWig(file.path(params$workdir, "data", "ChIPseq", params$sox10.bw),
+                             windows = SOX10_extend3kb_sorted)
+cvg[["BRG1"]] <- readBigWig(file.path(params$workdir, "data", "ChIPseq", params$brg1.bw),
+                            windows = SOX10_extend3kb_sorted)
+cvg[["MITF"]] <- readBigWig(file.path(params$workdir, "data", "ChIPseq", params$mitf.bw),
+                            windows = SOX10_extend3kb_sorted)
+```
+
+</details>
+
+- Get the ScoreMatrices using the `ScoreMatrixList`
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Compute score matrices for the 3 factors using 300 bins
+
+</summary>
+
+```{r smr_at_SOX10peaks, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Obtain the score matrices
+smr_at_SOX10peaks <- ScoreMatrixList(target = cvg, 
+                                     windows = SOX10_extend3kb_sorted, 
+                                     bin.num = 300)
+```
+
+</details>
+
+- Plot the heatmaps (use winsorization to adjust the color scale)
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot the heatmaps using `multiHeatMatrix`
+
+</summary>
+
+```{r multiHeatMatrix_SOX10peaks, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## Plot the heatmaps side-by-side
+multiHeatMatrix(smr_at_SOX10peaks, 
+                xcoords = c(-3000, 3000), 
+                winsorize = c(0, 99.9))
+```
+Note that if you use the argument `order = TRUE`, the rows will be sorted by
+the average of the signal across the 3 matrices, which is why it is important to
+sort the regions of interest before plotting the heatmaps and to use a function
+that keeps this row order.
+
+</details>
+
+### Customized heatmaps with the EnrichedHeatmap package
+So far, we have used functions from *ChIPseeker* and *genomation* to plot the
+heatmaps. While these functions offer some level of customization, you may need
+further customization in certain cases. The 
+[EnrichedHeatmap](https://github.com/jokergoo/EnrichedHeatmap)
+package offers an almost complete level of customization to plot heatmaps and
+heatmap annotations from functional genomic experiments.  
+The package is built on the 
+[ComplexHeatmap](https://github.com/jokergoo/ComplexHeatmap) package, which
+has an extensive documentation and examples.  
+  
+As an example, let's plot the enrichment of SOX10 and BRG1 reads
+around SOX10 peaks.  
+
+Step by step:\
+- First convert the *ScoreMatrix* objects to *normalizedMatrix* objects that
+  are used by *EnrichedHeatmap*. You can create a normalizedMatrix using the
+  `normalizeToMatrix` function but since we already computed the matrices, we
+  will instead convert them using `as.normalizedMatrix`
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Convert a ScoreMatrix to a normalizedMatrix
+
+</summary>
+
+```{r normalizedMatrix, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Convert signal matrices to normalizedMatrix objects
+normat <- list()
+
+## For BRG1 signal:
+normat[["BRG1"]] <- as.normalizedMatrix(
+  as(smr_at_SOX10peaks[["BRG1"]], "matrix"),
+  k_upstream = 150,
+  k_downstream = 150,
+  k_target = 0,
+  extend = c(3000, 3000),
+  signal_name = "BRG1",
+  target_name = "SOX10 peak centers"
 )
-## Create the Heatmap with default parameters
-EnrichedHeatmap(mat1$BRG1, name = "BRG1")
+
+## For SOX10 signal:
+normat[["SOX10"]] <- as.normalizedMatrix(
+  as(smr_at_SOX10peaks[["SOX10"]], "matrix"),
+  k_upstream = 150,
+  k_downstream = 150,
+  k_target = 0,
+  extend = c(3000, 3000),
+  signal_name = "SOX10",
+  target_name = "SOX10 peak centers"
+)
+
 ```
 
-`EnrichedHeatmap` combines the average profile and the density heatmap.
-We can observe a greater precision of the signal around the peak
-centers. As with `ChIPpeakAnno`, by default, heatmaps are sorted by read
-enrichment. However, it would be worth grouping together regions that
-have similar read enrichment patterns. This can be done using a
-clustering method such as k-means. This type of clustering requires the
-number of expected clusters to be set. Moreover, to obtain reproducible
-clustering results, we need to set a seed.
+</details>
 
-```{r Kmeans, message=FALSE, eval=FALSE, include=FALSE, fig.align = 'center'}
-## define a seed value to get the same results when re-running the analysis
-set.seed(123)
-## Create Heatmaps with k-means clustering on BRG1 data
-## We keep the generated object in order to use the clustering
-## information.
-heatmap.kmeans <- EnrichedHeatmap(mat1$BRG1, name = "BRG1", row_km = 8,
-    column_title = "BRG1", row_title_rot = 0)
-## draw the heatmap
-htlist <- draw(heatmap.kmeans)
-```
-
-Let's enhance it!
-
--   We first retrieve the peak clusters from `htlist` object to use them
-    as a pre-defined partition in our enhanced heatmap.
-
-```{r retreiveCl, message=FALSE, eval=FALSE, include=FALSE, out.width="50%", fig.align = 'center'}
-
-# Use the row_order function to retrieve peaks index
-# belonging to each cluster
-clusters <- row_order(htlist)
-# rename the clusters
-names(clusters) <- paste0("cluster",names(clusters))
-# transform to a vector
-# Check the class and length of the resulting object
-class(clusters)
-length(clusters)
-# Check what is actually in the list elements
-head(clusters[[1]])
-# Each element of the list contain the indexes of the peaks in the
-# original object
-# Check cluster sizes
-lapply(clusters,length)
-
-# create the partition by transforming the list in vector
-partition <- unlist(clusters)
-head(partition)
-# names of the elements were extended with a number
-# We thus trim them to retrieve the cluster name
-names(partition) <- substring(first = 1,last = 8,text=names(partition))
-# The numbers are the indexes of the rows, we need to
-# sort the indexes to get the right order of cluster
-# labels
-partition <- names(partition)[order(partition)]
-
-# keep this information with your BRG1 peaks
-peaks$BRG1$cluster <- partition
-head(peaks$BRG1)
-```
-
--   Now, customize the enrichment colors and differentiate clusters with
-    colors.
-
-```{r enhancedHeatmap, message=FALSE, eval=FALSE, include=FALSE, fig.align = 'center'}
-library(circlize)
-# Define new colors for each heatmap
-col_brg1 <- colorRamp2(c(0,10,15), c("white", "blue","black"))
-# create a legend for the cluster labels
-lgd <- Legend(at = c("cluster1", "cluster2", "cluster3", "cluster4","cluster5","cluster6","cluster7","cluster8"),
-    title = "Clusters",
-    type = "lines", legend_gp = gpar(col = 2:9))
-# Add a first column containing the cluster assignment
-ht_list <- Heatmap(partition, col = structure(2:9, names = paste0("cluster", 1:8)), name = "partition", show_row_names = FALSE, width = unit(3, "mm")) +
-EnrichedHeatmap(mat1$BRG1, name = "BRG1", col=col_brg1, # specify the heat colors
-  # color per cluster
-  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:9))),
-  column_title = "BRG1")
-draw(ht_list, split = partition, annotation_legend_list = list(lgd),
-    ht_gap = unit(c(2, 8), "mm"))
-```
-
-#### Are BRG1 binding profiles associated with particular genomic regions ?
-
-We will use here the clusters obtained with `EnrichedHeatmap` and look
-at the genomic distribution of peaks using
-`TxDb.Hsapiens.UCSC.hg38.knownGene` and `plotAnnoBar`.
-
-```{r clusterKmeans, include=FALSE, eval=FALSE, warning=F,message=F, fig.align = 'center', cache=TRUE}
-# The following code uses each element of the list (peaks indexes)
-# to select corresponding peaks in the original data and return them
-BRG1.clusters <- lapply(clusters,function(x,peaks){
-  # x represents one element of the list, one set of
-  # indexes
-  cl <- peaks[x]
-  return(cl)
-},peaks=peaks$BRG1)
-# check names of the resulting list
-names(BRG1.clusters)
-# Transform the list as GRangesList to be able to use it with the annotatePeak
-# function
-BRG1.clusters <- as(BRG1.clusters,"GRangesList")
-# apply annotatePeak function to each element of the BRG1.clusters GRangesList
-peakAnnoList <- lapply(BRG1.clusters, annotatePeak, TxDb=txdb,
-                       tssRegion=c(-1000, 100), annoDb="org.Hs.eg.db",
-                       verbose=FALSE)
-plotAnnoBar(peakAnnoList)
-```
-
-# ~~Data integration~~ Cross-referencing data: let's compare BRG1 to MITF and SOX10
-
-## Dataset description
-
-### Load MITF and SOX10 datasets
-
-Using the `readPeakFile` function, add MITF
-(MITF_CHIP-seq_peaks.narrowPeak) and SOX10
-(SOX10_CHIP-seq_peaks.narrowPeak) peaks to the `peaks` list. The path to
-these files is stored in the `params` list as the `chipseq` element.
+- Plot BRG1 heatmap using default parameters
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: Read MITF and SOX10 peak files
+Show code: Plot BRG1 EnrichedHeatmap
 
 </summary>
 
-```{r loadData2, eval=FALSE, include=FALSE}
-## Let's load MITF and SOX10 peak sets
-peaks[["MITF"]] <- readPeakFile(file.path(params$workdir, "data", "ChIPseq", params$mitf), as="GRanges")
-peaks[["SOX10"]] <- readPeakFile(file.path(params$workdir, "data", "ChIPseq", params$sox10), as="GRanges")
+```{r EnrichedHetmap_defaults_BRG1, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## BRG1 EnrichedHeatmap
+EnrichedHeatmap(normat$BRG1, name = "BRG1")
 ```
-
+We notice that the heatmap is sorted by increasing average signal across the
+regions.
 </details>
 
-The list `peaks` now contains `r length(peaks)` elements.
-
-```{r peaksStats1, eval=FALSE, include=FALSE}
-length(peaks)
-names(peaks)
-```
-
-### How many peaks were called?
-
-We want to answer this question using a bar plot with ggplot2. Here we
-are basically plotting the same graphs as in section 2.2 with more data
-sets.
-
-Try to create the command lines enabling to get a data.frame containing
-the number of peaks per chipped protein (use the `sapply` function to
-compute the length of each peak set). Then, plot the results as a bar
-plot filled with colors from the brewer palette "Set1" according to the
-TF name.
+- Now use the syntax of *EnrichedHeatmap* to plot both SOX10 and BRG1 heatmaps
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: Plot peak set size per TF
+Show code: Plot SOX10 + BRG1 EnrichedHeatmaps
 
 </summary>
 
-```{r loadData3, eval=FALSE, include=FALSE}
-# The `sapply` function makes now completely sense as we have a list with
-# several elements to which we want to apply functions, here the length function.
-peak.lengths <- data.frame(IP=names(peaks),
-                           NbPeaks=lengths(peaks))
-# check the object
-peak.lengths
+```{r EnrichedHetmap_defaults_SOX10_BRG1, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
+## SOX10 + BRG1 EnrichedHeatmap
+EnrichedHeatmap(normat$SOX10, name = "SOX10") +
+  EnrichedHeatmap(normat$BRG1, name = "BRG1")
 ```
-
-```{r plotpeaksetsize, include=FALSE, eval=F}
-ggplot(peak.lengths, aes(x=IP, y=NbPeaks, fill=IP)) +
-         geom_col()+
-         scale_fill_brewer(palette="Set1")+
-        theme_classic()
-```
+The first heatmap (SOX10) is ordered by increasing average signal and the second
+heatmap (BRG1) follows the same order as the first one so that we can compare 
+the signal of the 2 factors in the same regions.
 
 </details>
 
-```{r loadData2print, include=FALSE, eval=FALSE, echo=F}
-ggplot(peak.lengths, aes(x=IP, y=NbPeaks, fill=IP)) +
-         geom_col()+
-         scale_fill_brewer(palette="Set1")+
-        theme_classic()
-```
-
-### How large are these peaks?
-
-Compute statistics on all peak sizes as in section 2.3.
-
--   Compute the peak width within each peak set
--   Look at the structure of the return object (`str()`)
--   Use the `melt` function from the reshape2 package to obtain a
-    data.frame with one column with all the peak width and one column
-    containing the name of the peak set they come from.
+- Now let's cluster the BRG1 signal into 5 groups using kmeans
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: create a data.frame containing all peak widths
+Show code: cluster BRG1 signal into 8 groups
 
 </summary>
 
-```{r reshapeAll, message=FALSE, eval=FALSE, include=FALSE}
-peak.width = lapply(peaks,width)
-str(peak.width)
-peak.width.table <- melt(peak.width)
-head(peak.width.table)
+```{r kmeans_BRG1, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## make 5 clusters of row using kmeans
+set.seed(1234) #for reproducibility
+km5 <- kmeans(as.matrix(normat$BRG1),
+              centers=5)
+# keep the asignment of the rows to clusters
+part5clust = km5$cluster
 ```
 
 </details>
 
-In this table, there are as many rows as the total number of peaks in
-all peak sets. It contains all possible pairs IP \<-\> number of peaks
-possible.
-
-```{r reshapeCheck, message=FALSE, eval=FALSE, include=FALSE}
-# Number of peaks per chipped protein
-lengths(peaks)
-# total number of peaks
-sum(lengths(peaks))
-# size of the table we've just generated
-dim(peak.width.table)
-```
-
-We now want to represent the log transformed peak length distribution as
-boxplots filled with the corresponding colors. See bellow:
-
-```{r peakWidthNiceplot, message=FALSE, eval=FALSE, warning=F, include=FALSE, fig.align = 'center',echo=F}
-ggplot(peak.width.table, aes(x=L1, y=value, fill=L1)) +
-         geom_boxplot()+
-         theme_classic()+
-         scale_fill_brewer(palette="Set1")+
-         labs(x = "", y = "log10(Peak sizes)", fill = "")+
-         scale_y_log10()
-```
+- Take a look at the quantiles of the 2 signal matrices to choose the color scales
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: plot the distribution on peak length per experiment
+Show code: Based on the quantiles of the signal matrices create color scales for
+           the heatmaps. The color scales are created with the `colorRamp2` 
+           function from the [circlize](https://github.com/jokergoo/circlize)
+           package which linearly interpolates colors according to break values.
 
 </summary>
 
-```{r peakWidthNice, message=FALSE, include=FALSE, fig.align = 'center',eval=F}
-ggplot(peak.width.table, aes(x=L1, y=value, fill=L1)) +
-         geom_boxplot()+
-         theme_classic()+
-         scale_fill_brewer(palette="Set1")+
-         labs(x = "", y = "log10(Peak sizes)", fill = "")+
-         scale_y_log10()
+```{r colorRamp2_BRG1 and SOX10, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Look at the quantiles of the BRG1 matrix
+quantile(as(smr_at_SOX10peaks[["BRG1"]], "matrix"), seq(0.95,1,0.01))
+
+## and for SOX10
+quantile(as(smr_at_SOX10peaks[["SOX10"]], "matrix"), seq(0.95,1,0.01))
+
+## We pick 15 as the max color value (~99th quantile of the matrix) for BRG1
+col_brg1 <- colorRamp2(breaks = c(0,10,15), 
+                       colors = c("white", "blue","black"))
+## and 8 for SOX10
+col_sox10 <- colorRamp2(breaks = c(0,4,8), 
+                        colors = c("white", "orange","red"))
 ```
 
 </details>
 
-## Peak filtering
-
-In order to discard poor quality peaks, a threshold is set on qValue.
-The following code aims at selecting peaks with a qValue greater than 4.
-The qValue corresponds to the 9th column of narrowPeak files. So, we are
-going to set a threshold on this.
-
-```{r peakFiltering2, message=FALSE, eval=FALSE, include=FALSE}
-## We will filter the peaks in each set using lapply. We first define
-## a function to be applied to each set
-
-filter_V9 <- function(x){
-    res <- x[x$V9 >= 4,]
-    return(res)
-}
-
-## Select high quality peaks in each element of the list peaks
-peaks <- lapply(peaks, filter_V9)
-## Compute the number of remaining peaks
-sapply(peaks, length)
-```
-
-### Peak annotation
-
-Load and add MITF and SOX10 annotations to the `peakAnno` list that
-already contains BRG1 annotations using `annotatePeak` as in 2.6.1.
+- Plot the heatmaps of the partitioned SOX10 and BRG1 signals at SOX10 binding
+  sites using EnrichedHeatmap
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: annotate the peaks
+Show code: EnrichedHeatmaps of SOX10 and BRG1
 
 </summary>
 
-```{r annotatePeaksAll, eval=FALSE, message=FALSE, include=FALSE, fig.align = 'center', cache=TRUE}
-peakAnno[["MITF"]] = annotatePeak(peaks$MITF, tssRegion=c(-1000, 100), TxDb=txdb, annoDb="org.Hs.eg.db")
-peakAnno[["SOX10"]] = annotatePeak(peaks$SOX10, tssRegion=c(-1000, 100), TxDb=txdb, annoDb="org.Hs.eg.db")
+```{r SOX10_BRG1_kmeans_Hmap, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+## Create a vector of the colors that will be used for the clusters
+clustcolors <- brewer.pal(5,"Set1")
+names(clustcolors) <- 1:5
+
+## Create a legend object for the partition
+lgd <- Legend(at = paste0("cluster", 1:5),
+              title = "Clusters",
+              type = "lines", legend_gp = gpar(col = clustcolors))
+
+
+## In the plot we want:
+## 1) the partition in cluster 1 to 8
+## 2) the heatmap of BRG1 with the average profiles for the different clusters
+## 3) the heatmap of SOX10 with the average profiles for the different clusters
+## Define the heatmap list with these 3 objects:
+ht_list <- Heatmap(part5clust, 
+                   col = clustcolors, 
+                   cluster_rows = FALSE,
+                   name = " ", 
+                   width = unit(3, "mm"),
+                   show_heatmap_legend = FALSE) +
+  EnrichedHeatmap(normat$BRG1, 
+                  name = "BRG1", 
+                  col=col_brg1,
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = clustcolors))),
+                  column_title = "BRG1",
+                  axis_name = c("-3kb", "SOX10\npeak center", "+3kb")) +
+  EnrichedHeatmap(normat$SOX10, 
+                  name = "SOX10", 
+                  col=col_sox10,
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = clustcolors))),
+                  column_title = "SOX10",
+                  axis_name = c("-3kb", "SOX10\npeak center", "+3kb"))
+
+## Draw the heatmap while spliting the rows based on the clusters:
+draw(ht_list, 
+     split = part5clust,
+     annotation_legend_list = list(lgd),
+     ht_gap = unit(c(2, 8, 8), "mm"))
 ```
 
 </details>
 
-And plot the distribution of genomic feature of the peaks as a barplot.
 
-<details>
-
-<summary style="color: DarkCyan">
-
-Show code: Plot genomic feature distribution per experiment
-
-</summary>
-
-```{r plotAnnoAllpeaks,message=FALSE, eval=FALSE, include=FALSE, fig.align = 'center'}
-plotAnnoBar(peakAnno)
-```
-
-</details>
-
-
-### Heatmaps / Profiles
-
-One way to circumvent hard thresholds and relatively arbitrary choices,
-we can choose to use heatmap and average profile representations. To
-this end, we need to define the reference point of view. We use the BRG1
-peak centers.
-
-Load bigwig file for MITF and SOX10 **at BRG1 peaks**.
-
-```{r cvglistPlus, include=FALSE, eval=FALSE, warning=F,message=F}
-# Load and add bigwig profiles for MITF and SOX10 in cvglist already containing
-# BRG1
-names(cvglist)
-cvglist$MITF <- import(file.path(params$workdir, "data", "ChIPseq", params$mitf.bw),format="BigWig",
-                      which=extended.5K.BRG1,
-                      as="RleList")
-cvglist$SOX10 <- import(file.path(params$workdir, "data", "ChIPseq", params$sox10.bw),format="BigWig",
-                      which=extended.5K.BRG1,
-                      as="RleList")
-names(cvglist)
-```
-
-Prepare the matrices binned in 50bp windows.
-
-```{r prepareMatrices, message=FALSE, eval=FALSE, include=FALSE}
-sig <- featureAlignedSignal(cvglist, centers.BRG1,
-                           upstream = 5000, downstream = 5000,
-                           n.tile = 200)
-lapply(sig, dim)
-```
-
-Create normalized matrices.
-
-```{r CreateTSSNorm, include=FALSE, eval=FALSE, warning=F,message=F}
-## Create a list of normalizedMatrix that is the input format
-## for EnrichedHeatmap
-BRG1.mat <- lapply(sig, function(x){
-  # x represent each element of the sig list
-  mat <- as.normalizedMatrix(as.matrix(x),
-                      k_upstream = 100,
-                      k_downstream = 100,
-                      k_target = 0,
-                      extend = c(5000, 5000),
-                      #signal_name = names(sig[["MITF"]]),
-                      target_name = "Peak center"
-                      )
-  return(mat)
-})
-```
-
-We use the partition we computed in section 2.7.2.2
-
-```{r TSSheatmapKmeans, include=FALSE, eval=FALSE, message=F,warning=F, fig.align = 'center', cache=TRUE}
-# Define new colors for each heatmap
-col_sox10 <-colorRamp2(c(0,3,4), c("white", "blue","black"))
-col_mitf <- colorRamp2(c(0,4,5), c("white", "blue","black"))
-col_brg1 <- colorRamp2(c(0,5,6), c("white", "blue","black"))
-# create a legend for the cluster labels
-lgd <- Legend(at = c("cluster1", "cluster2", "cluster3", "cluster4","cluster5","cluster6","cluster7","cluster8"),
-    title = "Clusters",
-    type = "lines", legend_gp = gpar(col = 2:9))
-# Add a first column containing the cluster assignment
-ht_list <- Heatmap(partition, col = structure(2:9, names = paste0("cluster", 1:8)), name = "partition", show_row_names = FALSE, width = unit(3, "mm")) +
-EnrichedHeatmap(BRG1.mat$BRG1, name = "BRG1", col=col_brg1,
-  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:9))),
-  column_title = "BRG1") +
-EnrichedHeatmap(BRG1.mat$MITF, name = "MITF",
-  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:9))),
-  column_title = "MITF", row_title_rot = 0, col=col_mitf) +
-EnrichedHeatmap(BRG1.mat$SOX10, name = "SOX10",
-  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:9))),
-  column_title = "SOX10", row_title_rot = 0, col=col_sox10)
-draw(ht_list, split = partition, annotation_legend_list = list(lgd),
-    ht_gap = unit(c(2, 8, 8,8), "mm"))
-```
-
-Lets have a look at the TF binding profiles in cluster 5.
-
-```{r plotClustBRG1, include=FALSE, eval=FALSE, fig.align = 'center'}
-# For each matrix, filter peaks from cluster 5
-sig.tmp <- lapply(sig,
-                  function(x, part){
-                    mat <- x[part == "cluster5",]
-                    return(mat)
-                    },
-                  part=partition)
-
-# plot the average profiles
-featureAlignedDistribution(sig.tmp, centers.BRG1,
-                           upstream=5000, downstream=5000,
-                           type="l", n.tile=200)
-
-```
+# Linking the binding of factors with gene expression
 
 ## Is gene expression influenced by TF binding to their promoters ?
 
