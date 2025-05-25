@@ -1,10 +1,9 @@
 ---
 title: "EBAIIn2 - ChIP-seq Workshop"
-author: "**Authors**: Elodie Darbo, Stephanie Le Gras & Pascal Martin  **Contributors**: Rachel Legendre & Lucie Khamvongsa-Charbonnier"
+author: "**Authors**: Pascal Martin, Elodie Darbo, Stephanie Le Gras  **Contributors**: Rachel Legendre & Lucie Khamvongsa-Charbonnier"
 date:  '`r format(Sys.Date(), "%B %d, %Y")`'
 output: 
   rmdformats::material:
-    
     use_bookdown: true
     thumbnails: true
     cards: false
@@ -1835,7 +1834,7 @@ Show code: EnrichedHeatmaps of SOX10 and BRG1
 
 </summary>
 
-```{r SOX10_BRG1_kmeans_Hmap, warning=FALSE, message=FALSE, eval=TRUE, cache=TRUE}
+```{r SOX10_BRG1_kmeans_Hmap, warning=FALSE, message=FALSE, eval=TRUE, fig.align='center', cache=TRUE}
 ## Create a vector of the colors that will be used for the clusters
 clustcolors <- brewer.pal(5,"Set1")
 names(clustcolors) <- 1:5
@@ -1880,277 +1879,342 @@ draw(ht_list,
 </details>
 
 
-# Linking the binding of factors with gene expression
+# Analyzing ChIP-seq data together with RNA-seq data
 
-## Is gene expression influenced by TF binding to their promoters ?
+In this paragraph, we will include gene expression data from RNA-seq in our
+analyses.  
+Let's import the processed data.
 
--   We will concentrate on genes having BRG1 binding close to their TSS.
-    To do that we will plot a heatmap centered on TSS.
-
-First retrieve the TSS positions from the TxDB object
-
-```{r TSStxdb, message=FALSE, eval=FALSE, warning=FALSE, include=FALSE}
-# Generate TSS and promoter GRanges, the function promoters allows to retrieve the
-# gene ID (entrez)
-TSS <- GenomicFeatures::promoters(txdb, upstream=0, downstream=0, columns="gene_id")
-```
-
-Clean the TSS list removing TSS with no gene ID assigned (column
-`gene_id` in the metadata) and on scaffolds (`seqnames`).\
-The column gene_id is of type characterList, this type is difficult to
-manipulate. We then decide to transform it to a character vector. We
-can't directly `unlist` the object because, to save memory, not
-annotated TSS are assigned empty elements which disappear when
-unlisting.
-
-```{r geneidTSS, message=FALSE, eval=FALSE, warning=FALSE, include=FALSE}
-# For each element of the characterList we check it's length, if it is 0
-# we fill the element with NA. We the unlist.
-gene_ids <- unlist(lapply(TSS$gene_id,function(x){
-  if (length(x)==0){
-     NA
-  }
-  else {
-    x
-  }
-} ))
-# Keep TSS on selected chromosomes annotated with a gene ID and remove
-# duplicate IDs due to transcript isoforms. Here, the selection of the
-# isoform is random.
-TSS <- TSS[as.vector(seqnames(TSS)) %in% paste0("chr",c(1:22,"X","Y")) & 
-            !is.na(gene_ids) & 
-             !duplicated(gene_ids)]
-
-# extend TSS both direction
-TSS.extended <- resize(TSS, width = width(TSS)+4000, fix = "center")
-```
-
-Load bigwig profiles for TSS extended regions, create matrices and
-transform in the `enrichedHeatmap` recognized format.
-
-```{r loadBigwigs2, message=FALSE, eval=FALSE, warning=FALSE, include=FALSE}
-# load the bw file for all TFs within the promoter
-cvglist <- list()
-cvglist$BRG1 <- import(file.path(params$workdir, "data", "ChIPseq", params$brg1.bw),
-                       format="BigWig",
-                       which=TSS.extended,
-                       as="RleList")
-cvglist$MITF <- import(file.path(params$workdir, "data", "ChIPseq", params$mitf.bw),
-                       format="BigWig",
-                       which=TSS.extended,
-                       as="RleList")
-cvglist$SOX10 <- import(file.path(params$workdir, "data", "ChIPseq", params$sox10.bw),
-                        format="BigWig",
-                        which=TSS.extended,
-                        as="RleList")
-# Produce the signal matrices
-sig <- featureAlignedSignal(cvglist, TSS, n.tile=400,
-                           upstream=2000, downstream=2000)
-# Transform the signal matrices as normalizedMatrix
-TSS.mat <- lapply(sig, function(x){
-  # x represent each element of the sig list
-  mat <- as.normalizedMatrix(as.matrix(x),
-                      k_upstream = 200,
-                      k_downstream = 200,
-                      k_target = 0,
-                      extend = c(2000, 2000),
-                      target_name = "TSS"
-                      )
-  return(mat)
-})
-```
-
-We will compute K-means clustering with `kmeans` function to define the
-partitions of the TSS based on BRG1 signal.
-
-```{r plotHeatmapTSS, message=FALSE, eval=FALSE, warning=FALSE, include=FALSE, fig.align = 'center', cache=TRUE}
-# Compute a partition using the kmeans function, asking for 5 clusters
-set.seed(20210526)
-partition.TSS = paste0("cluster", kmeans(TSS.mat$BRG1, centers = 5)$cluster)
-# Specify colors for the position enrichment for each matrix
-col_sox10 = colorRamp2(c(0,3,4), c("white", "blue","black"))
-col_mitf = colorRamp2(c(0,4,5), c("white", "blue","black"))
-col_brg1 = colorRamp2(c(0,5,6), c("white", "blue","black"))
-lgd = Legend(at = c("cluster1", "cluster2", "cluster3", "cluster4","cluster5"),
-    title = "Clusters",
-    type = "lines", legend_gp = gpar(col = 2:6))
-ht_list = Heatmap(partition.TSS, col = structure(2:7, names = paste0("cluster", 1:5)), name = "partition", show_row_names = FALSE, width = unit(3, "mm")) +
-EnrichedHeatmap(TSS.mat$BRG1, name = "BRG1", col=col_brg1,
-  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:6))),
-  column_title = "BRG1") +
-EnrichedHeatmap(TSS.mat$MITF, name = "MITF",
-  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:6))),
-  column_title = "MITF", row_title_rot = 0, col=col_mitf) +
-EnrichedHeatmap(TSS.mat$SOX10, name = "SOX10",
-  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:6))),
-  column_title = "SOX10", row_title_rot = 0, col=col_sox10)
-draw(ht_list, split = partition.TSS, annotation_legend_list = list(lgd),
-    ht_gap = unit(c(2, 8, 8,8), "mm"))
-```
-
-Lets have a look at the TF binding profiles in cluster 4.
-
-```{r plotClustTSS, fig.align = 'center', eval=FALSE, cache=TRUE, include=FALSE}
-# For each matrix, filter peaks from cluster 5
-sig.tmp <- lapply(sig,function(x,part){
-    mat <- x[part=="cluster4",]
-    return(mat)
-  },part=partition.TSS)
-
-# plot the average profiles
-featureAlignedDistribution(sig.tmp, TSS,
-                           upstream=2000, downstream=2000,
-                           type="l",n.tile=400)
-
-```
-
--   Let's integrate expression data from RNA-seq experiment.
-
-The goal is to visualize the gene expression according to the cluster
-the TSS belong.
-
-```{r, include=FALSE, eval=FALSE}
+```{r loadRNaseq_results, include=TRUE, eval=TRUE, cache=TRUE}
 # load RNA-seq normalized expression data
 RNAseq <- readRDS(file.path(params$workdir, "data", "RNAseq", params$rnaseq)) # RNAseq
 head(RNAseq)
 ```
 
-RNA-seq columns: - Ensembl.Gene.ID: Gene idenfier from ensEMBL
-(ENSG\*\*\*\*\*) - WT.norm: normalized expression for wild type cell
-lines - shBGR1.norm: normalized expression for shBRG1 cell lines -
-logCPM: average log transformed overall expression - logFC: log fol
-change between the two conditions - FDR: multi-testing corrected p-value
-from edgeR statistical test - signif (up, down, stable): significance
-was set as: FDR \< 0.01, logCPM \> 5, abs(logFC) \> 1
+RNA-seq columns:  
 
-Reads from RNA-seq were assigned to genes modeled from ensEMBL and thus
-are identified with ensEMBL ID. However, the TSS are annotated with
-ENTREZ IDs, we thus need to map together the identifiers. We use an
-`OrgDB` object for the human genome the available information are
-displayed using `columns()`.
+  - Ensembl.Gene.ID: Gene idenfier from ensEMBL (ENSG\*\*\*\*\*)  
+  - WT.norm: normalized expression for wild type cell lines  
+  - shBGR1.norm: normalized expression for shBRG1 cell lines  
+  - logCPM: average log transformed overall expression  
+  - logFC: log fold-change between the two conditions  
+  - FDR: multiple-testing corrected p-value from edgeR statistical test  
+  - signif (up, down, stable): significance was set as: FDR \< 0.01, 
+    logCPM \> 5, abs(logFC) \> 1  
+  
+Reads from RNA-seq were assigned to genes annotated in ensEMBL and thus
+are identified with ensEMBL ID. However, in the TxDb package that we loaded,
+the genes are annotated with ENTREZ IDs. Thus, we need to map the identifiers
+to each other.  
+
+> **_NOTE:_**: it is generally a good idea to stick to a single annotation file
+> to analyze all your data. But sometimes, you get data from other sources (a
+> colleague, a public database, etc.) so you don't have the choice.  
+
+We use the `OrgDB` object for the human genome to do this.
+The available information are displayed using `columns()`.
 
 ```{r, include=FALSE, eval=FALSE}
 columns(org.Hs.eg.db)
 ```
 
-We then use the function `mapIds` from `AnnotationDbi` package with the
+We then use the function `mapIds` from the `AnnotationDbi` package with the
 keys `ENSEMBL` and `ENTREZID`. You can see that other identifiers are
 available from this object (e.g: SYMBOL, REFSEQ, UNIPROT etc).
 
-```{r, include=FALSE, eval=FALSE}
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: map ENSEMBL IDs to ENTREZ IDs
+
+</summary>
+
+```{r mapENSEMBLid2ENTREZid, include=TRUE, eval=TRUE, cache=TRUE}
 conv <- mapIds(x = org.Hs.eg.db,
-              keys = RNAseq$Ensembl.Gene.ID, # what do we want to be mapped
-              column = "ENTREZID", # which type of ID we want
-              keytype = "ENSEMBL") # what type of ID we give
+              keys = RNAseq$Ensembl.Gene.ID, # what we want to map
+              keytype = "ENSEMBL", # what type of IDs are the keys
+              column = "ENTREZID") # which type of ID we want
 head(conv)
 # names of the vector are ENSEMBL IDs and elements are ENTREZ IDs
 ```
 
-We use the `match` function that allows to return match between the IDs
-in `RNAseq` and the ensEMBL IDs from the conversion vector
+The warning indicates that there is not a perfect one-to-one match between
+ENSEMBL ids and ENTREZ ids. 
 
-```{r, include=FALSE, eval=FALSE}
-m <- match(RNAseq$Ensembl.Gene.ID,
-           names(conv))
-head(m)
-# m contains NA for element in the first vector not present in the 2nd
-# or the index of the element of the 2nd vector corresponding the those
-# in the first
-# Attribute the matched ENTREZ ID
-RNAseq$ENTREZID <- conv[m]
-head(RNAseq)
-```
+</details>
 
-We can now associate RNA-seq and TSS information using the ENTREZ IDs
-and the `match` function.
-
-```{r, include=FALSE, eval=FALSE}
-# We add the partition (clusters) to the TSS object in order to add the
-# clusters to the RNA-seq object
-TSS$cluster <- partition.TSS
-# The common IDs this time are the ENTREZ IDs
-m <- match(RNAseq$ENTREZID,
-           unlist(TSS$gene_id))
-RNAseq$cluster <- TSS$cluster[m]
-head(RNAseq)
-```
-
-We first want to compare the expression between this to condition in the
-different clusters.\
-We need to melt the `RNAseq` object keeping only the expression values
-in the "WT.norm" and the "shBGR1.norm" columns and the cluster
-assignment. We want to evaluate the differences using boxplots as
-bellow.
-
-```{r boxplotexprPlot, include=FALSE, eval=FALSE, fig.align = 'center',echo=F,warning=F,message=F}
-# melt the RNAseq table to get a data.frame with a column indicating
-# the experimental condition, a column with the cluster assignment
-# and the expression values
-
-expr.melt <- melt(RNAseq[,c("WT.norm", "shBGR1.norm", "cluster")])
-head(expr.melt)
-
-ggplot(expr.melt,aes(x=cluster,y=log2(value+1))) +
-  geom_boxplot(aes(color=variable)) +
-  theme_bw() + theme(legend.position = "top") +
-  scale_color_manual(values=c(WT.norm="black",shBGR1.norm=colours()[613]))
-```
+Let's take a closer look at the mappings.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: plot expression distribution in both condition
+Show code: Explore the conv object
 
 </summary>
 
-```{r boxplotexpr, include=FALSE, eval=FALSE, fig.align = 'center',eval=F}
-# melt the RNAseq table to get a data.frame with a column indicating
-# the experimental condition, a column with the cluster assignment
-# and the expression values
-
-expr.melt <- melt(RNAseq[,c("WT.norm", "shBGR1.norm", "cluster")])
-head(expr.melt)
-
-ggplot(expr.melt, aes(x = cluster, y = log2(value+1))) +
-  geom_boxplot(aes(color=variable)) +
-  theme_bw() + theme(legend.position = "top") +
-  scale_color_manual(values=c(WT.norm="black",shBGR1.norm=colours()[613]))
+```{r checkIDmappings, eval=TRUE, cache=TRUE}
+length(conv) #number of ENSEMBL ids that were mapped (all the rows of RNAseq)
+sum(is.na(conv)) #number of ENSEMBL ids that could not be mapped to an ENTREZ ID
+length(conv[!is.na(conv)]) # Number of ENSEMBL ids that were mapped to an ENTREZ ID
+length(unique(conv[!is.na(conv)])) # Number of unique ENTREZ IDs that corresponded to at least one ENSEMBL ID
+table(conv[!is.na(conv)])[table(conv[!is.na(conv)]) > 1] # ENTREZ IDs that were mapped to more than one ENSEMBL IDS
 ```
+</details>
+
+
+The names of the `conv` object should be in the same order as in the column
+`Ensembl.Gene.ID` of the `RNAsseq` table. We verify it and then assign the
+`conv` vector as a new `ENTREZID` column in the `RNAseq` dataset
 
 </details>
 
-We can see that there are no visible difference between the conditions
-even if cluster 3, which has the less BRG1 signal, is much less
-expressed than the others. We can check if the distribution of
-significantly differentially expressed genes differs among the clusters
-using barplots.
-
-```{r, include=FALSE, eval=FALSE, fig.align = 'center',echo=F,warning=F,message=F}
-# Distribution of differentially expressed genes as barplots
-ggplot(RNAseq,aes(x=cluster)) +
-  geom_bar(aes(fill=signif),position = "fill",color="black") +
-  theme_bw() +
-  scale_fill_manual(values=c(up="red",down="blue",stable="white"))
-```
+Let's take a closer look at the mappings.
 
 <details>
 
 <summary style="color: DarkCyan">
 
-Show code: plot significantly differentially expressed genes in clusters
+Show code: Create an *ENTREZID* column in the *RNASeq* data frame
 
 </summary>
 
-```{r, include=FALSE, eval=FALSE, fig.align = 'center',eval=F}
-# Distribution of differentially expressed genes as barplots
-ggplot(RNAseq,aes(x=cluster)) +
-  geom_bar(aes(fill=signif),position = "fill",color="black") +
-  theme_bw() +
-  scale_fill_manual(values=c(up="red",down="blue",stable="white"))
+```{r AddENTREZIDcolumn, eval=TRUE, cache=TRUE}
+identical(names(conv), RNAseq$Ensembl.Gene.ID)
+RNAseq$ENTREZID <- conv
+```
+</details>
+
+We will now focus on the TSS of the genes and take a look at the binding of the
+factors around the TSS.  
+
+First, we extract a `GRanges` object with all the TSS.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Create a *GRanges* object with the TSS for all genes
+
+</summary>
+
+```{r extractTSS, eval=TRUE, cache=TRUE}
+tss <- promoters(genes(txdb), upstream = 0, downstream = 1)
+```
+</details>
+
+Then, we filter this `tss` object to keep only the TSS for which we have gene 
+expression data.
+
+```{r filter TSS, eval=TRUE, cache=TRUE}
+tss <- tss[names(tss) %in% RNAseq$ENTREZID[!is.na(RNAseq$ENTREZID)]]
 ```
 
+Let's sort the TSS by average gene expression in the cell lines (`logCPM` column).
+We use the `match` function to find a match between the names of `tss` and the
+corresponding row in the `RNAseq` dataset
+
+```{r addlogCPM_to_TSS, eval=TRUE, cache=TRUE}
+## Add a metadata column with the logCPM from the RNAseq dataset
+mcols(tss)$logCPM <- RNAseq$logCPM[match(names(tss), RNAseq$ENTREZID)]
+## sort tss by decreasing logCPM
+tss <- tss[order(tss$logCPM, decreasing = TRUE)]
+```
+
+Import the read coverage for the 3 factors at the TSS
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Import the read coverage for SOX10, BRG1 and MITF at the TSS
+
+</summary>
+
+```{r cvg_tss, eval=TRUE, cache=TRUE}
+cvg_tss <- list()
+cvg_tss[["SOX10"]] <- readBigWig(file.path(params$workdir, "data", "ChIPseq", params$sox10.bw),
+                                 windows = tss + 4000)
+cvg_tss[["BRG1"]] <- readBigWig(file.path(params$workdir, "data", "ChIPseq", params$brg1.bw),
+                                windows = tss + 4000)
+cvg_tss[["MITF"]] <- readBigWig(file.path(params$workdir, "data", "ChIPseq", params$mitf.bw),
+                                windows = tss + 4000)
+```
 </details>
+
+
+Now, we use *genomation* to produce the heatmaps of the different factors in
+regions covering +/-4kb around the TSS
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot a heatmap of the signal for the 3 factors at the TSS
+
+</summary>
+
+```{r getTSSscoreMatrices, eval=TRUE, warning=FALSE, message=FALSE, fig.align='center', cache=TRUE}
+#Get the score matrices around the TSS
+smr_at_TSS <- ScoreMatrixList(target = cvg_tss,
+                              windows = tss + 4000, 
+                              bin.num = 400)
+
+#plot the heatmap
+multiHeatMatrix(smr_at_TSS, 
+                xcoords = c(-4000, 4000),
+                winsorize = c(0, 99.95))
+
+```
+</details>
+
+
+There doesn't seem to be a very clear association between the binding of the
+3 factors and the gene expression level as measured by `logCPM`. Note that
+`logCPM` is an imperfect measure of the relative gene expression when comparing
+different genes because it doesn't take into account the length of the
+transcripts.  
+Anyway, there also seems to be different patterns of BRG1 binding around the
+TSS. So we are going to use kmeans to cluster the patterns of BRG1 signal
+into 4 groups.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Partition de TSS into 4 groups based on BRG1 signal
+
+</summary>
+
+```{r km5_brg1_tss, eval=TRUE, cache=TRUE}
+set.seed(123)
+km4_tss <- kmeans(as(smr_at_TSS[["BRG1"]], "matrix"),
+                  centers = 4)
+part_km4_tss <- km4_tss$cluster
+```
+</details>
+
+
+Take a look at the partition that was made.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Plot a heatmap of the signal for the 3 factors for the partitioned TSS
+
+</summary>
+
+```{r multiHeatmap_TSS_km4, eval=TRUE, cache=TRUE, fig.align='center'}
+#plot the heatmap
+multiHeatMatrix(smr_at_TSS, 
+                xcoords = c(-4000, 4000),
+                winsorize = c(0, 99.95),
+                group = factor(part_km4_tss))
+
+```
+</details>
+
+
+The 4 groups roughly correspond to  
+
+  1. high and focused BRG1 binding at the TSS  
+  2. diffuse binding around the TSS  
+  3. focused binding at the TSS  
+  4. no binding at the TSS  
+
+We would like to know if there is some link between gene expression in WT
+controls and shBRG1 cells and this partition of the BRG1 binding at the TSS.
+To do this, we can add the `WT.norm` and `shBRG1` columns to the metadata of
+the `tss` object. We will also add the `signif` columns that we will need
+later.
+
+```{r addcols_to_tss, eval=TRUE, cache=TRUE}
+## first get the match between the names of tss and the ENTREZIDs in the RNAseq table
+mm <- match(names(tss), RNAseq$ENTREZID)
+
+## then add the columns to the metadata of tss
+mcols(tss)$WT.norm <- RNAseq$WT.norm[mm]
+mcols(tss)$shBGR1.norm <- RNAseq$shBGR1.norm[mm]
+mcols(tss)$signif <- RNAseq$signif[mm]
+
+## also add the info about the clusters
+mcols(tss)$clusters <- paste0("cluster", part_km4_tss)
+```
+
+Now we can extract a data frame from the `tss` object and reformat it to make 
+a boxplot with ggplot2.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Reformat the `mcols` of the *tss* object to prepare it for ggplot2
+
+</summary>
+
+```{r boxplot_expr, eval=TRUE, cache=TRUE}
+exprdf <- tidyr::pivot_longer(as.data.frame(mcols(tss))[, c("WT.norm", "shBGR1.norm", "clusters")],
+                              cols = c("WT.norm", "shBGR1.norm"),
+                              names_to = "condition",
+                              values_to = "expression")
+head(exprdf)
+```
+</details>
+
+
+And make the boxplot with ggplot2.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Make a boxplot with ggplot2
+
+</summary>
+
+```{r boxplot_exprdf, eval=TRUE, cache=TRUE, fig.align='center'}
+ggplot(exprdf, aes(x = clusters, y = log2(expression+1), color = condition)) +
+  geom_boxplot() +
+  scale_color_npg() +
+  theme_bw() +
+  theme(legend.position = "top")
+```
+</details>
+
+
+We see that:  
+
+  - cluster 3, which has low or no BRG1 binding corresponds to genes with 
+    low expression
+  - genes in cluster 2 which have diffused BRG1 binding at the TSS tend to have 
+    slightly higher expression upon BRG1 knockdown
+
+Let's see if the distribution of "significantly" differentially expressed genes
+differs among clusters.
+
+<details>
+
+<summary style="color: DarkCyan">
+
+Show code: Make a barplot for the `signif` variable for each cluster
+
+</summary>
+
+```{r barplot_exprdf, eval=TRUE, cache=TRUE, fig.align='center'}
+ggplot(as.data.frame(mcols(tss)), aes(x = clusters, fill = signif)) +
+  geom_bar(position = "fill", color="black") +
+  scale_fill_manual(values=c(up="red",down="blue",stable="white")) +
+  theme_bw()
+```
+</details>
+
+We confirm that cluster2 has more significantly upregulated genes than the 
+other clusters.
+
+
+# Enrichment of functional categories and pathway analyses
 
 ## Are there particular biological function associated with the differentially expressed genes having different BRG1 binding patterns ?
 
