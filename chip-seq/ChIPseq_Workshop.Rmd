@@ -51,7 +51,8 @@ library(circlize)
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 library(org.Hs.eg.db)
-
+library(clusterProfiler)
+library(pathview)
 ```
 
 ```{r SetParamsHidden, eval=FALSE, echo=FALSE}
@@ -2216,60 +2217,124 @@ other clusters.
 
 # Enrichment of functional categories and pathway analyses
 
-## Are there particular biological function associated with the differentially expressed genes having different BRG1 binding patterns ?
+## GO enrichment analysis of genes in cluster 2
 
-To answer this question, we use the R package `clusterProfiler` to
-compute hypergeometric enrichment of biological function in each cluster
-using KEGG annotation database.\
-`clusterProfiler` provide the function `compareCluster` that allows to
-analyze and compare enrichment in different group of genes. This
-function recognize ENTREZ identifiers.
+We want to know if the genes in cluster 2, which are characterized by a diffuse
+binding pattern of BRG1 at their TSS and a tendency to be upregulated upon
+BRG1 knockdown, are enriched for specific Gene Ontology 
+([GO](https://geneontology.org/)) Biological Process annotations.  
+
+The [clusterprofiler](https://www.bioconductor.org/packages/release/bioc/html/clusterProfiler.html)
+package provides very useful functions to perform either classical enrichment
+analysis of functional categories in gene lists or gene set enrichment analyses.  
+Here we will use the classical approach, based on the hypergeometric
+distribution, called "enrichment analysis" or "GO over-representation analysis"
+in the terminology of *clusterprofiler* documentation.  
 
 \
 
 ![Représentation simplifiée graphique du test
 hypergéometrique](data/hypergeometric.png)
 
-```{r funcEnr, include=FALSE, eval=FALSE, message=F,warning=F}
+We can easily extract the IDs of the genes in cluster2 using for example:  
+
+  - `names(tss)[tss$clusters == "cluster2"]`  
+
+The main question that we need to answer is what is the gene universe? In
+general, you should think as the "gene universe" as the set of genes that
+could potentially have been selected in your gene list. Since we did different
+filters, e.g. by selecting genes present in the RNAseq dataset or that had a
+match between the ENSEMBLID and the ENTREZID, our gene universe does NOT
+encompass all the genes in the genome. In our case, a good definition of the
+gene universe would be all the genes in the tss object, since we performed
+kmeans on these genes to identify genes in cluster 2.  
+
+So now, let's use this info to compute the GO over-representation statistics:  
+```{r GOenrich_cluster2, eval=TRUE, cache=TRUE}
 # load the library
 library(clusterProfiler)
+# Run the enrichment analysis
+ego <- enrichGO(gene          = names(tss)[tss$clusters == "cluster2"],
+                universe      = names(tss),
+                OrgDb         = org.Hs.eg.db,
+                ont           = "BP",
+                pAdjustMethod = "BH",
+                pvalueCutoff  = 0.01,
+                qvalueCutoff  = 0.05,
+                readable      = TRUE)
+```
+
+And take a look at the results:
+```{r GOenrich_cluster2_res, eval=TRUE, cache=TRUE}
+head(ego)
+```
+
+
+## KEGG enrichment analysis in DE genes from the different clusters
+
+Now let's perform the same type of analysis but focusing on the differentially
+expressed (DE) genes present in each of the 4 clusters.
+Here, we're asking if DE genes that have different BRG1 binding patterns at 
+their TSS are enriched in specific KEGG pathways.  
+The *clusterProfiler* package provides the function `compareCluster` that 
+allows to analyze and compare enrichment in different group of genes. This
+function recognizes ENTREZ identifiers.
+
+```{r funcEnr, include=TRUE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 # Select genes whose gene expression is significantly changing
 # between conditions
-geneList <- RNAseq[RNAseq$signif!="stable",]
-# The function split help at splitting a vector to a list following categories
-# in an other vector.
-geneList <- split(geneList$ENTREZID,geneList$cluster)
-names(geneList)
-head(geneList$cluster1)
+geneList <- tss[tss$signif != "stable",]
+
+# The function split can split a vector to a list following categories
+# in an other vector (take a look at the geneList object after running split).
+geneList <- split(names(geneList), geneList$clusters)
+
+# Now perform a KEGG pathway over-representation analysis 
 compKEGG <- compareCluster(geneCluster   = geneList,
                            fun           = "enrichKEGG",
                            pvalueCutoff  = 0.05,
                            pAdjustMethod = "BH")
-dotplot(compKEGG, showCategory = 15, title = "KEGG Pathway Enrichment Analysis")
+# Plot the results
+dotplot(compKEGG, 
+        showCategory = 15, 
+        title = "KEGG Pathway Enrichment Analysis")
 ```
 
 Let's focus on cluster 4 and visualize which genes of the the KEGG
-pathway "Cell cycle" (hsa04110) are both differentially expressed and
-bound by BRG1 and MITF. We use the `pathview` package which maps
-differential gene expression values to KEGG maps and create a PNG file
-in your current directory that you get with `getwd()`.
+pathway "Apoptosis" are both differentially expressed and
+bound by BRG1 and MITF.  
+We obtain the identifier of the pathway by looking at the `compKEGG` object:
 
-```{r funcEnrcl4, include=FALSE, eval=FALSE, message=F,warning=F}
+  - `compKEGG@compareClusterResult`  
+
+So the ID of the KEGG pathway "Apoptosis" is *hsa04210*.  
+We use the `pathview` package which maps differential gene expression values 
+to KEGG pathway maps and create a PNG file in your current directory that you 
+get with `getwd()`.
+
+```{r funcEnrcl4, eval=FALSE, message=FALSE, warning=FALSE}
 # load the library
 library(pathview)
-# Retrieve gene id from cluster 4
-geneList.cl4 <- geneList$cluster4
-# use match function to select correspondant logFC from RNA-seq data
-m <- match(geneList.cl4,RNAseq$ENTREZID)
-logFC.cl4 <- RNAseq$logFC[m]
-names(logFC.cl4) <- geneList.cl4
-# call the function
-pathview(logFC.cl4, pathway.id = "hsa04110", species = "hsa")
+
+# Get the names of the genes in cluster 4
+EntrezID.cl4 <- names(tss)[tss$clusters == "cluster4"]
+
+# match these EntrezIDs to the RNAseq dataset
+mmid <- match(EntrezID.cl4, RNAseq$ENTREZID)
+
+# Get the log fold-change for these genes from the RNAseq table
+logFC.cl4 <- RNAseq$logFC[mmid]
+names(logFC.cl4) <- RNAseq$ENTREZID[mmid]
+
+# Create an image of the pathway with colors for differential gene expression
+pathview(logFC.cl4, pathway.id = "hsa04210", species = "hsa")
+
 ```
 
-![Pathview](data/hsa04110.pathview.png)
+![Pathview](images/hsa04210.pathview.png)
 
-### Are there published data I could use to enrich my analysis ?
+
+# Enriching your analyses with published data
 
 -   Data Mining with ChIP seq data deposited in GEO with `ChIPSeeker`
 
