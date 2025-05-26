@@ -2336,25 +2336,48 @@ pathview(logFC.cl4, pathway.id = "hsa04210", species = "hsa")
 
 # Enriching your analyses with published data
 
--   Data Mining with ChIP seq data deposited in GEO with `ChIPSeeker`
+There are multiple ways to access public / published datasets and multiple
+sources that you can mine in order to compare your own data with what other
+groups have observed.  
+The following databases are only some examples:
 
-There are many ChIP seq data sets that have been published and deposited
-in GEO database. We can compare our own dataset to those deposited in
+  -The [(mod)ENCODE](https://www.encodeproject.org/chip-seq-matrix/?type=Experiment&replicates.library.biosample.donor.organism.scientific_name=Homo%20sapiens&assay_title=TF%20ChIP-seq&status=released) project  
+  - The [UCSC](https://genome-euro.ucsc.edu/cgi-bin/hgGateway?redirect=manual&source=genome.ucsc.edu) 
+    genome browser  
+  - The [GEO](https://www.ncbi.nlm.nih.gov/geo/) database and the [SRA](https://www.ncbi.nlm.nih.gov/sra)  
+  - The [ENA](https://www.ebi.ac.uk/ena/browser/home) database (which also 
+    replicates GEO) and the [ArrayExpress](https://www.ebi.ac.uk/biostudies/arrayexpress) database  
+  - The [TCGA](https://www.cancer.gov/ccg/research/genome-sequencing/tcga)  
+  - The [Cistrome](https://cistrome.org/db/) data browser  
+  - The [ReMap](https://remap.univ-amu.fr/) database  
+  - The [ChIP atlas](https://chip-atlas.org/)  
+  
+
+## Mining GEO ChIP-seq data with `ChIPSeeker`
+
+There Gene Expression Omnibus (GEO) contains a vast number of ChIP-seq datasets.  
+We can compare our own dataset to those deposited in
 GEO to search for significant overlap data. Significant overlap of ChIP
 seq data by different binding proteins may be used to infer cooperative
-regulation and thus can be used to generate hypotheses.
+regulation and thus can be used to generate hypotheses.  
 
-We collect about 17,000 bed files deposited in GEO, user can use
-getGEOspecies to get a summary based on spieces.
+The [ChIPseeker](https://www.bioconductor.org/packages/release/bioc/html/ChIPseeker.html) 
+package [@pmid36286622] package provides useful functions to
+download and use GEO datasets in R / Bioconductor.  
 
-```{r geospecies, include=FALSE, eval=FALSE, message=F,warning=F}
+We can collect >100,000 bed files deposited in GEO. You can use
+`getGEOspecies` to get the number of files available for different species.
+
+```{r geospecies, eval=TRUE, message=FALSE, warning=FALSE}
 getGEOspecies()[1:25,]
 ```
 
-User can access the detail information by getGEOInfo, for each genome
-version.
-
-```{r, include=FALSE, eval=FALSE}
+You can also use the `getGEOgenomeVersion` to get the same information but
+based on genome version used to analyze the data.  
+  
+You can access the detailed information using the `getGEOInfo` function,
+for each genome version.
+```{r, eval=TRUE, cache=TRUE}
 hg38 <- getGEOInfo(genome="hg38", simplify=TRUE)
 head(hg38)
 ```
@@ -2362,35 +2385,34 @@ head(hg38)
 ChIPseeker provides the function `downloadGEObedFiles` to download all
 the bed files of a particular genome.
 
-```{r, include=FALSE, eval=FALSE}
+```{r, eval=FALSE}
 downloadGEObedFiles(genome="hg38", destDir="hg38")
 ```
 
 Or a vector of GSM accession number by `downloadGSMbedFiles`.
 
-```{r, include=FALSE, eval=FALSE}
+```{r, eval=FALSE}
 gsm <- hg38$gsm[sample(nrow(hg38), 10)]
 downloadGSMbedFiles(gsm, destDir="hg38")
 ```
 
 After the download of bed files from GEO, we can pass them to
-`enrichPeakOverlap` for testing the significant of overlap. Parameter
-targetPeak can be the folder, e.g. hg19, that containing bed files.
+`enrichPeakOverlap` for testing the significance of the overlaps. Parameter
+targetPeak can be the folder, e.g. hg38, that containing bed files.
 `enrichPeakOverlap` will parse the folder and compare all the bed files.
 It is possible to test the overlap with bed files that are mapped to
 different genome or different genome versions: `enrichPeakOverlap`
 provides a parameter `chainFile` that can pass a chain file and liftOver
 the `targetPeak` to the genome version consistent with `queryPeak.`
-Signifcant overlap can be used to generate hypothesis of cooperative
-regulation. By mining the data deposited in GEO, we can identify some
-putative complex or interacted regulators in gene expression regulation
-or chromosome remodelling for further validation.
+Significant overlaps can be used to generate hypotheses on cooperative
+regulation. By mining the data deposited in GEO, we can identify putative 
+complexes or interacting regulators of gene expression or chromatin remodeling
+for further validation.
 
--   The (mod)ENCODE project
-    [link](https://www.encodeproject.org/chip-seq-matrix/?type=Experiment&replicates.library.biosample.donor.organism.scientific_name=Homo%20sapiens&assay_title=TF%20ChIP-seq&status=released)
 
--   The UCSC genome browser
-    [link](https://genome-euro.ucsc.edu/cgi-bin/hgGateway?redirect=manual&source=genome.ucsc.edu)
+## The `AnnotationHub`
+This package provides a client for the Bioconductor AnnotationHub web resource. The AnnotationHub web resource provides a central location where genomic files (e.g., VCF, bed, wig) and other resources from standard locations (e.g., UCSC, Ensembl) can be discovered. The resource includes metadata about each resource, e.g., a textual description, tags, and date of modification. The client creates and manages a local cache of files retrieved by the user, helping with quick and reproducible access.
+
 
 # Importance of the annotation databases
 
