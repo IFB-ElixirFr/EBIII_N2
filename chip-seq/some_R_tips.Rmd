@@ -1,12 +1,15 @@
 ---
 title: "Some tips"
 author: "**Authors**: Elodie Darbo et Pascal Martin"
-date: "2025-06"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
-  html_document:
-    fig_caption: yes
-    toc: true
-    toc_depth: 2
+  rmdformats::material:
+    use_bookdown: true
+    thumbnails: true
+    cards: false
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 <style>
@@ -15,28 +18,28 @@ details {
 }
 </style>
 
-<script>
-  // Move TOC to the Table of Contents heading (with id "table-of-contents")
-  $(function() {
-    $( "#TOC" ).insertAfter( $( "#table-of-contents" ) );
-  });
-</script>
+<!-- <script> -->
+<!--   // Move TOC to the Table of Contents heading (with id "table-of-contents") -->
+<!--   $(function() { -->
+<!--     $( "#TOC" ).insertAfter( $( "#table-of-contents" ) ); -->
+<!--   }); -->
+<!-- </script> -->
 
 
-```{r setup, include=FALSE}
-knitr::opts_knit$set(echo = TRUE,  root.dir="/Users/elodiedarbo/Documents/enseignement/EBAII/EBAII_2025n2/EBIII_N2/chip-seq/")
-```
+<!-- ```{r setup, include=FALSE} -->
+<!-- knitr::opts_knit$set(echo = TRUE,  root.dir="/Users/elodiedarbo/Documents/enseignement/EBAII/EBAII_2025n2/EBIII_N2/chip-seq/") -->
+<!-- ``` -->
 
-In this file, you will find some general tips that are very useful when starting programming with R.
+<!-- In this file, you will find some general tips that are very useful when starting programming with R. -->
 
-#### Table of content {#table-of-contents}
-
-
+<!-- #### Table of content {#table-of-contents} -->
 
 
-## Variable types
 
-#### primitive data type
+
+# Variable types
+
+## primitive data type
 
 | Type Name / Value | R Function to Check | Description                                                   |
 |-------------------|---------------------|---------------------------------------------------------------|
@@ -59,7 +62,7 @@ In this file, you will find some general tips that are very useful when starting
 
 `Inf` arises in operations like 1/0; it's a valid numeric value.
 
-##### Character ordering {#ordChar}
+## Character ordering {#ordChar}
 
 When comparing or sorting character strings in R, the comparison is done **lexicographically**, meaning alphabetically based on Unicode (ASCII for common characters). This ordering can sometimes lead to **surprising results**, especially when comparing letters, numbers, and accented characters.
 
@@ -98,7 +101,7 @@ utf8ToInt("10")  # (only the first element is taken into account)
 - Always check types and use `sort()`, `utf8ToInt()` and `class()` to explore behavior.
 
 
-#### Homogeneous data structures (Combine same type elements)
+## Homogeneous data structures (Combine same type elements)
 
 | Structure | R Function to Check | Description                                                                 |
 |-----------|---------------------|-----------------------------------------------------------------------------|
@@ -171,7 +174,7 @@ x3[1,2,]
 </details>
 
 
-#### Heterogeneous data structures (Can combine different type elements)
+## Heterogeneous data structures (Can combine different type elements)
 
 | Structure   | R Function to Check | Description                                                                   |
 |-------------|---------------------|-------------------------------------------------------------------------------|
@@ -221,7 +224,7 @@ list.ex$new$a
 
 </details>
 
-#### Naming a variable {#NameVar}
+## Naming a variable {#NameVar}
 
 Choosing a variable name is important. It is recommended to make it **explicit**, **short**, and **unique**.
 
@@ -235,21 +238,11 @@ It's best to maintain a consistent naming style throughout the script: variableN
 
 This is applicable for abjects and functions
 
-[Go to index](#table-of-contents)
-
-<br>
-<br>
-
-<br>
-<br>
-
----
-
-## Data frame formats {#longWide} 
+# Data frame formats {#longWide} 
 
 When working with data, you'll often hear about **"long"** and **"wide"** data formats. These are two common ways to organize tabular data, and understanding the difference is important for analysis and visualization.
 
-#### Wide format
+## Wide format
 
 _Example_:
 
@@ -262,7 +255,7 @@ Here, each time point (`height_0`, `height_10`, `height_20`) has its own column.
 
 This format is often easier to read for humans and is common in spreadsheets.
 
-#### Long format
+## Long format
 
 In **long format**, each row is one measurement, and repeated variables (like time) are stored in a **single column**, with another column to indicate the context (e.g., time). 
 
@@ -279,7 +272,7 @@ _Same data in long format_:
 
 This format is especially useful for plotting and for many R functions that work better with tidy, long-form data.
 
-#### Summary
+## Summary
 
 | Format | Description                                      | Use Case                          |
 |--------|--------------------------------------------------|-----------------------------------|
@@ -287,14 +280,14 @@ This format is especially useful for plotting and for many R functions that work
 | Long   | One row per measurement, with key-value columns  | Ideal for plots, grouped analysis |
 
 
-#### The tidyverse solution
+## The tidyverse solution
 You can use the `pivot_longer()` and `pivot_wider()` functions (from the `tidyr` package) to switch between formats.
 
 `pivot_longer()` function enables to convert multiple columns into key-value pairs, where column names become variable names, and their corresponding values are stacked. `pivot_wider()` function allows to spread key-value pairs across multiple columns. We say that `pivot_longer()` reshapes **wide format to long** format and `pivot_wider()` do the invert.
 
 _Basic syntax_
 
-![](images/pivot_tidyr.png){width=60%}
+![](images/pivot_tidyr.png){width=150%}
 ```{r, eval=F}
 # load the library
 library(tidyr)
@@ -314,28 +307,15 @@ wide_tab <- long_tab %>%
   )
 ```
 
+# How to install packages? 
 
-[Go to index](#table-of-contents)
-
-
-<br>
-<br>
-
-<br>
-<br>
-
-
----
-
-## How to install packages? 
-
-#### What is a package?
+## What is a package?
 
 In R, packages are collections of functions, data sets, and documentation that extend the functionality of `base` R. They are like add-ons or plugins that provide additional tools for performing specific tasks (data analysis, visualization, machine learning...).
 
 Think of them as libraries or modules that you can install to get extra tools for your work. Some packages come pre-installed with R, while others can be installed from repositories.
 
-#### What is a repository?
+## What is a repository?
 
 In the context of R, a repository is a centralized location where software, code, data, or packages are stored, managed, and distributed.
 
@@ -346,7 +326,7 @@ It exists several repositories.
 
 CRAN is the primary repository for R packages. It is a collection of thousands of R packages that are contributed by developers around the world. Packages stored on CRAN go through a review process to ensure quality and compatibility. CRAN allows users to install packages directly in R either via the “Packages” panel or directly using a command line.
 
-![](images/install_packages_R.png){width=60%}
+![](images/install_packages_R.png){width=150%}
 ```{r install package CRAN, eval=F}
 install.packages("package_name")
 ```
@@ -393,7 +373,7 @@ Link : [Bioconductor](https://www.bioconductor.org/install/)
 
 - **GitHub**
 
-GitHub is a platform for hosting code repositories, and it is widely used by R developers to share and collaborate on R packages and projects.
+[GitHub](https://github.com/dashboard) is a platform for hosting code repositories, and it is widely used by R developers to share and collaborate on R packages and projects.
 
 Developers can use GitHub to publish the latest versions of their R packages, even before they are available on CRAN. It also allows for collaboration, version control, and contribution from the open-source community.
 
@@ -413,21 +393,8 @@ Note that here we don't use `install_packages()` but `install_github()` to fetch
 
 **Don't forget to activate the installed package(s) with `library()`.**
 
-Link : [GitHub](https://github.com/dashboard)
 
-[Go to index](#table-of-contents)
-
-
-<br>
-<br>
-
-<br>
-<br>
-
-
----
-
-## How to save and load R objects? 
+# How to save and load R objects? 
 
 `saveRDS()` and `readRDS()` are functions in R used to save and load single R objects. They are often used when you want to store an object (like a data frame, list, or function) to a file and retrieve it later — even under a different name.
 
@@ -480,21 +447,11 @@ ls()
 | `save()`     | Yes                    | Yes                   | `.RData`  |
 | `saveRDS()`  | No                     | No                    | `.rds`    |
 
-[Go to index](#table-of-contents)
 
-<br>
-<br>
-
-<br>
-<br>
+# How to find help? 
 
 
----
-
-## How to find help? 
-
-
-#### In RStudio
+## In RStudio
 
 1. `?`: Search R documentation for a specific term.
 
@@ -511,27 +468,25 @@ help(mean)
 
 2. Through the interface
 
-![](images/help_in_RStudio.png){width=60%}
+![](images/help_in_RStudio.png){width=150%}
 
-#### On line
+## On line
 
 1. Browsers
 
-You can use your favorite web browser. Start any prompt with "R" and request in English. You will often find forums([Stack Overflow](https://stackoverflow.com/questions), [Biostars](https://www.biostars.org/)) and blogs ([Data Geek](https://datageek.blog/en/), [bioinfo-fr](https://bioinfo-fr.net/)) that are plenty of "already asked questions". Keywords are important and experience will help you to optimize your search.
-
-A browser dedicated to R programming is also available: [https://rseek.org/](https://rseek.org/).
+You can use your favorite web browser. Start any prompt with "R" and request in English. You will often find forums ([Stack Overflow](https://stackoverflow.com/questions), [Biostars](https://www.biostars.org/)), blogs ([Data Geek](https://datageek.blog/en/), [bioinfo-fr](https://bioinfo-fr.net/)) and browsers ([GeeksForGeeks](https://www.geeksforgeeks.org/), [RSeek - dedicated to R](https://rseek.org/)) that are plenty of "already asked questions". Keywords are important and experience will help you to optimize your search.
 
 2. Large Language Model
 
 You can use your favorite Large Language Model (LLM) to help with programming. These tools are very good at basic coding tasks like writing simple functions, explaining code, or helping you debug.
 
-CAUTION: LLMs are not perfect. The way you ask your question can strongly influence the answer you get. Also, LLMs are designed to always give you a response — even when they’re unsure — so they won’t say “I don’t know” or “That doesn’t make sense.”
+**CAUTION**: LLMs are not perfect. The way you ask your question can strongly influence the answer you get. Also, LLMs are designed to always give you a response — even when they’re unsure — so they won’t say “I don’t know” or “That doesn’t make sense.”
 
 That means **it’s your job to read the answer critically** and test the code yourself. For complex or very specific questions, the LLM might make mistakes or give you code that looks correct but doesn’t actually work.
 
 Think of LLMs as **helpful assistants - not experts**. They’re great for learning, but you should always verify their answers and ask for help when something doesn’t seem right.
 
-#### Reused Functions Across Packages
+## Reused Functions Across Packages
 
 In R, many functions are implemented in one package and then **reused or re-exported** in other packages. This allows developers to build on existing tools without rewriting the same code. However, it also means that:
 
@@ -566,7 +521,7 @@ _Why This Matters_
 
 **Tip**: You can also use `getAnywhere(resize)` to explore all versions of a function if it's defined in multiple places.
 
-#### Common Function Names and Conflicts Between Packages
+## Common Function Names and Conflicts Between Packages
 
 Some function names in R are **very common**, like `select()` or `merge()`. These names are used in **multiple packages**, and sometimes they have different behavior depending on which package they come from.
 
@@ -612,18 +567,7 @@ conflicts()
 This will help you understand why a function might behave differently than expected.
 
 
-[Go to index](#table-of-contents)
-
-<br>
-<br>
-
-<br>
-<br>
-
-
----
-
-## How to build a function? {#fncbuild} 
+# How to build a function? {#fncbuild} 
 
 Functions are essential components of the R programming language. They allow you to encapsulate code into reusable blocks, making your scripts more modular, readable, and easier to maintain.
 
@@ -639,7 +583,7 @@ A function in R has three main parts: the function name, arguments, and the func
 
 _Basic Syntax_:
 
-![](images/build_functions.png){width=60%}
+![](images/build_functions.png){width=150%}
 
 
 ```{r}
@@ -698,18 +642,8 @@ The argument `x` takes each line (MARGIN=1) of `plant_height[,-c(1,2)]` and comp
 
 To go further you can check this [blog](https://www.geeksforgeeks.org/build-a-function-in-r/).
 
-[Go to index](#table-of-contents)
 
-<br>
-<br>
-
-<br>
-<br>
-
-
----
-
-## How to compare elements? 
+# How to compare elements? 
 
 In data manipulation, comparisons help you filter and select specific data based on conditions. Some common comparison operators include: `==` (equal to), `!=` (not equal to), `>` (greater than), `<` (less than), `>=` (greater than or equal to), and `<=` (less than or equal to). Additionally, `%in%` is useful for checking if a value belongs to a set of values. These comparisons allow you to create logical statements that you can use to filter the elements that meet your criteria.
 
@@ -726,18 +660,8 @@ Here is a table summarizing the most common operators:
 | `|`         | logical **OR**                | `x > 6 | x < 3`                     |
 | `!`         | logical **NO**                | `!x %in% c("A", "C")` |
 
-[Go to index](#table-of-contents)
 
-<br>
-<br>
-
-<br>
-<br>
-
-
----
-
-## The `apply` family 
+# The `apply` family 
 
 In this section, we will learn how to use the `apply` family of functions in R. These functions help you perform repetitive operations (e.g., `sum()`, `mean()`) on rows, columns, or elements of data structures like vectors, matrices, or data frames.
 
@@ -755,7 +679,7 @@ plant_height <- data.frame(indiv = LETTERS[1:10],
 ```
 
 
-#### Functions from base
+## Functions from base
 
 Imagine you want to know the average height at each time point. How would you do?
 
@@ -793,13 +717,13 @@ average_ind
 
 These functions are fast and convenient, but they work only in specific situations. What if we want to apply a different function, or calculate values by group?
 
-#### The `apply()` function
+## The `apply()` function {#moreArgs}
 
 The `apply` command allows  to apply any function across an array, matrix or data frame.
 
 _Basic Syntax_:
 
-![](images/apply_sketch.png){width=60%}
+![](images/apply_sketch.png){width=150%}
 
 
 ```{r, eval=FALSE}
@@ -847,7 +771,7 @@ The argument `x` takes each line (MARGIN=1) of `plant_height[,-c(1,2)]` and comp
 
  </details>
 
-##### Important: What if the function needs additional arguments? {#moreArgs}
+**Important: What if the function needs additional arguments?**
 
 What if the function you want to apply requires more than one argument ? 
 
@@ -889,7 +813,7 @@ This rule applies to **all functions in the apply family** (`apply()`, `lapply()
 
 > If you're using [your own custom function](#fncbuild) , make sure its first argument matches what `apply()` or similar functions will provide. You can always add other named arguments afterward.
 
-#### The `lapply()` function
+## The `lapply()` function
 
 `lapply()` is a function in R used to apply another function to each element of a list. It returns a list of the same length, with the results of applying the function to each element.
 
@@ -954,7 +878,7 @@ element_classes
 
  </details>
 
-#### The `sapply()` function
+## The `sapply()` function
 
 `sapply()` is a simplified version of `lapply()`. Like `lapply()`, it applies a function to each element of a list (or list-like object). But instead of always returning a list, `sapply()` tries to return the simplest possible result: a vector, matrix, or list—depending on what makes the most sense.
 
@@ -1025,7 +949,7 @@ nb_15
  </details>
 
 
-#### The `tapply()` function
+## The `tapply()` function
 
 `tapply()` is a function used to apply a function to subsets of a vector, based on one or more grouping variables. It’s especially useful when you want to compute summary statistics (like the mean, sum, or count) within groups, such as calculating the average height per time point or species.
 
@@ -1111,7 +1035,7 @@ tapply(X = plant_height_long$height,
 ```
 
 
-#### Group and summarize the information with `group_by()` and `summarise()` from dplyr package
+## Group and summarize the information with `group_by()` and `summarise()` from dplyr package
 
 `group_by()` is used to group data based on one or more variables (columns). This function is often used in conjunction with other `tidyverse` functions.
 
@@ -1160,10 +1084,6 @@ plant_height_long %>%
   group_by(time) %>%
   summarise(mean_height = mean(height))
 ```
-
-[Go to index](#table-of-contents)
-
----
 
 
 
