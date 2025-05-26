@@ -3036,39 +3036,109 @@ get with <code>getwd()</code>.</p>
 </div>
 <div id="enriching-your-analyses-with-published-data" class="section level1" number="7">
 <h1><span class="header-section-number">7</span> Enriching your analyses with published data</h1>
-<ul>
-<li>Data Mining with ChIP seq data deposited in GEO with <code>ChIPSeeker</code></li>
-</ul>
-<p>There are many ChIP seq data sets that have been published and deposited
-in GEO database. We can compare our own dataset to those deposited in
+<p>There are multiple ways to access public / published datasets and multiple
+sources that you can mine in order to compare your own data with what other
+groups have observed.<br />
+The following databases are only some examples:</p>
+<p>-The <a href="https://www.encodeproject.org/chip-seq-matrix/?type=Experiment&amp;replicates.library.biosample.donor.organism.scientific_name=Homo%20sapiens&amp;assay_title=TF%20ChIP-seq&amp;status=released">(mod)ENCODE</a> project<br />
+- The <a href="https://genome-euro.ucsc.edu/cgi-bin/hgGateway?redirect=manual&amp;source=genome.ucsc.edu">UCSC</a>
+genome browser<br />
+- The <a href="https://www.ncbi.nlm.nih.gov/geo/">GEO</a> database and the <a href="https://www.ncbi.nlm.nih.gov/sra">SRA</a><br />
+- The <a href="https://www.ebi.ac.uk/ena/browser/home">ENA</a> database (which also
+replicates GEO) and the <a href="https://www.ebi.ac.uk/biostudies/arrayexpress">ArrayExpress</a> database<br />
+- The <a href="https://www.cancer.gov/ccg/research/genome-sequencing/tcga">TCGA</a><br />
+- The <a href="https://cistrome.org/db/">Cistrome</a> data browser<br />
+- The <a href="https://remap.univ-amu.fr/">ReMap</a> database<br />
+- The <a href="https://chip-atlas.org/">ChIP atlas</a></p>
+<div id="mining-geo-chip-seq-data-with-chipseeker" class="section level2" number="7.1">
+<h2><span class="header-section-number">7.1</span> Mining GEO ChIP-seq data with <code>ChIPSeeker</code></h2>
+<p>There Gene Expression Omnibus (GEO) contains a vast number of ChIP-seq datasets.<br />
+We can compare our own dataset to those deposited in
 GEO to search for significant overlap data. Significant overlap of ChIP
 seq data by different binding proteins may be used to infer cooperative
 regulation and thus can be used to generate hypotheses.</p>
-<p>We collect about 17,000 bed files deposited in GEO, user can use
-getGEOspecies to get a summary based on spieces.</p>
-<p>User can access the detail information by getGEOInfo, for each genome
-version.</p>
+<p>The <a href="https://www.bioconductor.org/packages/release/bioc/html/ChIPseeker.html">ChIPseeker</a>
+package <span class="citation">(Wang et al. 2022)</span> package provides useful functions to
+download and use GEO datasets in R / Bioconductor.</p>
+<p>We can collect &gt;100,000 bed files deposited in GEO. You can use
+<code>getGEOspecies</code> to get the number of files available for different species.</p>
+<div class="sourceCode" id="cb143"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1" tabindex="-1"></a><span class="fu">getGEOspecies</span>()[<span class="dv">1</span><span class="sc">:</span><span class="dv">25</span>,]</span></code></pre></div>
+<pre><code>##                                                species Freq
+## 1                      Actinobacillus pleuropneumoniae    1
+## 2  Actinobacillus pleuropneumoniae serovar 3 str. JL03    1
+## 3                                        Aedes aegypti   11
+## 4                                             Anabaena    6
+## 5                                  Anolis carolinensis    7
+## 6                                    Anopheles gambiae    2
+## 7                                       Apis mellifera   17
+## 8                            Apis mellifera scutellata    1
+## 9                                          Arabidopsis   17
+## 10                                  Arabidopsis lyrata    4
+## 11                                Arabidopsis thaliana 2473
+## 12                                Atelerix albiventris    2
+## 13                                   Bombus terrestris    8
+## 14                                          Bos taurus  257
+## 15                             Brachypodium distachyon   10
+## 16                           Branchiostoma lanceolatum   93
+## 17                                       Brassica rapa   12
+## 18                              Caenorhabditis elegans  532
+## 19                                  Callithrix jacchus   48
+## 20                                    Candida albicans   34
+## 21                                Candida dubliniensis   20
+## 22                                         Canis lupus    1
+## 23                              Canis lupus familiaris   35
+## 24                               Capsaspora owczarzaki   21
+## 25                                       Carica papaya    1</code></pre>
+<p>You can also use the <code>getGEOgenomeVersion</code> to get the same information but
+based on genome version used to analyze the data.</p>
+<p>You can access the detailed information using the <code>getGEOInfo</code> function,
+for each genome version.</p>
+<div class="sourceCode" id="cb145"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1" tabindex="-1"></a>hg38 <span class="ot">&lt;-</span> <span class="fu">getGEOInfo</span>(<span class="at">genome=</span><span class="st">&quot;hg38&quot;</span>, <span class="at">simplify=</span><span class="cn">TRUE</span>)</span>
+<span id="cb145-2"><a href="#cb145-2" tabindex="-1"></a><span class="fu">head</span>(hg38)</span></code></pre></div>
+<pre><code>##       series_id        gsm     organism                                 title
+## 16488  GSE58207 GSM1403308 Homo sapiens         Lactimidomycin treated HCT116
+## 16489  GSE58207 GSM1403308 Homo sapiens         Lactimidomycin treated HCT116
+## 16490  GSE58207 GSM1403307 Homo sapiens          Cycloheximide treated HCT116
+## 16491  GSE58207 GSM1403307 Homo sapiens          Cycloheximide treated HCT116
+## 20345  GSE67978 GSM1660032 Homo sapiens   H3K27ac_Human_Brain_WhiteMatter_HS2
+## 20351  GSE67978 GSM1660029 Homo sapiens H3K27ac_Human_Brain_OccipitalPole_HS2
+##                                                                                                                                 supplementary_file
+## 16488                                   ftp://ftp.ncbi.nlm.nih.gov/geo/samples/GSM1403nnn/GSM1403308/suppl/GSM1403308_HCT116_LTM_sense.bedGraph.gz
+## 16489                              ftp://ftp.ncbi.nlm.nih.gov/geo/samples/GSM1403nnn/GSM1403308/suppl/GSM1403308_HCT116_LTM_anti-sense.bedGraph.gz
+## 16490                              ftp://ftp.ncbi.nlm.nih.gov/geo/samples/GSM1403nnn/GSM1403307/suppl/GSM1403307_HCT116_CHX_anti-sense.bedGraph.gz
+## 16491                                   ftp://ftp.ncbi.nlm.nih.gov/geo/samples/GSM1403nnn/GSM1403307/suppl/GSM1403307_HCT116_CHX_sense.bedGraph.gz
+## 20345   ftp://ftp.ncbi.nlm.nih.gov/geo/samples/GSM1660nnn/GSM1660032/suppl/GSM1660032_H3K27ac_Human_Brain_WhiteMatter_HS2_hg38_peaks.narrowPeak.gz
+## 20351 ftp://ftp.ncbi.nlm.nih.gov/geo/samples/GSM1660nnn/GSM1660029/suppl/GSM1660029_H3K27ac_Human_Brain_OccipitalPole_HS2_hg38_peaks.narrowPeak.gz
+##       genomeVersion pubmed_id
+## 16488          hg38      &lt;NA&gt;
+## 16489          hg38      &lt;NA&gt;
+## 16490          hg38      &lt;NA&gt;
+## 16491          hg38      &lt;NA&gt;
+## 20345          hg38      &lt;NA&gt;
+## 20351          hg38      &lt;NA&gt;</code></pre>
 <p>ChIPseeker provides the function <code>downloadGEObedFiles</code> to download all
 the bed files of a particular genome.</p>
+<div class="sourceCode" id="cb147"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1" tabindex="-1"></a><span class="fu">downloadGEObedFiles</span>(<span class="at">genome=</span><span class="st">&quot;hg38&quot;</span>, <span class="at">destDir=</span><span class="st">&quot;hg38&quot;</span>)</span></code></pre></div>
 <p>Or a vector of GSM accession number by <code>downloadGSMbedFiles</code>.</p>
+<div class="sourceCode" id="cb148"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb148-1"><a href="#cb148-1" tabindex="-1"></a>gsm <span class="ot">&lt;-</span> hg38<span class="sc">$</span>gsm[<span class="fu">sample</span>(<span class="fu">nrow</span>(hg38), <span class="dv">10</span>)]</span>
+<span id="cb148-2"><a href="#cb148-2" tabindex="-1"></a><span class="fu">downloadGSMbedFiles</span>(gsm, <span class="at">destDir=</span><span class="st">&quot;hg38&quot;</span>)</span></code></pre></div>
 <p>After the download of bed files from GEO, we can pass them to
-<code>enrichPeakOverlap</code> for testing the significant of overlap. Parameter
-targetPeak can be the folder, e.g. hg19, that containing bed files.
+<code>enrichPeakOverlap</code> for testing the significance of the overlaps. Parameter
+targetPeak can be the folder, e.g. hg38, that containing bed files.
 <code>enrichPeakOverlap</code> will parse the folder and compare all the bed files.
 It is possible to test the overlap with bed files that are mapped to
 different genome or different genome versions: <code>enrichPeakOverlap</code>
 provides a parameter <code>chainFile</code> that can pass a chain file and liftOver
 the <code>targetPeak</code> to the genome version consistent with <code>queryPeak.</code>
-Signifcant overlap can be used to generate hypothesis of cooperative
-regulation. By mining the data deposited in GEO, we can identify some
-putative complex or interacted regulators in gene expression regulation
-or chromosome remodelling for further validation.</p>
-<ul>
-<li><p>The (mod)ENCODE project
-<a href="https://www.encodeproject.org/chip-seq-matrix/?type=Experiment&amp;replicates.library.biosample.donor.organism.scientific_name=Homo%20sapiens&amp;assay_title=TF%20ChIP-seq&amp;status=released">link</a></p></li>
-<li><p>The UCSC genome browser
-<a href="https://genome-euro.ucsc.edu/cgi-bin/hgGateway?redirect=manual&amp;source=genome.ucsc.edu">link</a></p></li>
-</ul>
+Significant overlaps can be used to generate hypotheses on cooperative
+regulation. By mining the data deposited in GEO, we can identify putative
+complexes or interacting regulators of gene expression or chromatin remodeling
+for further validation.</p>
+</div>
+<div id="the-annotationhub" class="section level2" number="7.2">
+<h2><span class="header-section-number">7.2</span> The <code>AnnotationHub</code></h2>
+<p>This package provides a client for the Bioconductor AnnotationHub web resource. The AnnotationHub web resource provides a central location where genomic files (e.g., VCF, bed, wig) and other resources from standard locations (e.g., UCSC, Ensembl) can be discovered. The resource includes metadata about each resource, e.g., a textual description, tags, and date of modification. The client creates and manages a local cache of files retrieved by the user, helping with quick and reproducible access.</p>
+</div>
 </div>
 <div id="importance-of-the-annotation-databases" class="section level1" number="8">
 <h1><span class="header-section-number">8</span> Importance of the annotation databases</h1>
@@ -3083,7 +3153,7 @@ closest genes if no other evidences are used).</p>
 </div>
 <div id="session-info" class="section level1" number="9">
 <h1><span class="header-section-number">9</span> Session info</h1>
-<div class="sourceCode" id="cb143"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb149"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb149-1"><a href="#cb149-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
 <pre><code>## R version 4.4.2 (2024-10-31)
 ## Platform: x86_64-pc-linux-gnu
 ## Running under: Ubuntu 18.04.6 LTS
@@ -3332,6 +3402,9 @@ Quinlan, Aaron R., and Ira M. Hall. 2010. <span>“<span>BEDTools</span>: A Flex
 </div>
 <div id="ref-Robinson2010" class="csl-entry">
 Robinson, Mark D, Davis J McCarthy, and Gordon K Smyth. 2010. <span>“edgeR: A Bioconductor Package for Differential Expression Analysis of Digital Gene Expression Data.”</span> <em>Bioinformatics</em> 26 (1): 139–40. <a href="https://doi.org/10.1093/bioinformatics/btp616">https://doi.org/10.1093/bioinformatics/btp616</a>.
+</div>
+<div id="ref-pmid36286622" class="csl-entry">
+Wang, Qianwen, Ming Li, Tianzhi Wu, Li Zhan, Lin Li, Meijun Chen, Wenqin Xie, et al. 2022. <span>“Exploring Epigenomic Datasets by <span>ChIPseeker</span>.”</span> <em>Curr. Protoc.</em> 2 (10): e585.
 </div>
 </div>
 </div>
