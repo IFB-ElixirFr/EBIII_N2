@@ -2234,7 +2234,7 @@ in the terminology of *clusterprofiler* documentation.
 \
 
 ![Représentation simplifiée graphique du test
-hypergéometrique](data/hypergeometric.png)
+hypergéometrique](images/hypergeometric.png)
 
 We can easily extract the IDs of the genes in cluster2 using for example:  
 
