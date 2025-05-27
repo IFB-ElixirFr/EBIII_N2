@@ -1,0 +1,6 @@
+---
+title: "Le document avec juste un titre"
+author: "Jean-Edmond Synthétique"
+date: "1er avril 1956"
+output: html_document
+---
