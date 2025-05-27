@@ -2411,7 +2411,241 @@ for further validation.
 
 
 ## The `AnnotationHub`
-This package provides a client for the Bioconductor AnnotationHub web resource. The AnnotationHub web resource provides a central location where genomic files (e.g., VCF, bed, wig) and other resources from standard locations (e.g., UCSC, Ensembl) can be discovered. The resource includes metadata about each resource, e.g., a textual description, tags, and date of modification. The client creates and manages a local cache of files retrieved by the user, helping with quick and reproducible access.
+
+The *AnnotationHub* is a web resource that provides a central location where
+genomic files in different formats (e.g. vcf, bed, wig, etc.) and other resources
+coming from different locations (e.g. UCSC, ENSEMBL, ENCODE, etc.) can be mined
+and downloaded to enrich your analyses.  Importantly, the resource that are
+available include **metadata** with e.g. description of the experiments, tags 
+and date of modification which are important to figure out where exactly the 
+data comes from and if it fits with the aim of your analyses.  
+The [AnnotationHub](https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html) 
+package is a client for R/Bioconductor to search these resources and download 
+the data in appropriate formats for their analysis in the R/Bioconductor 
+environment.  
+The client creates and manages a local cache of files that are retrieved by the
+user, which allows quick and reproducible access to the data.
+
+First we need to create an `AnnotationHub` instance. This will create a local
+cache on your machine so that repeat queries for the same information (even in 
+different R sessions) will be very fast. By default, the cache will be created
+in your home folder, which may not be appropriate in a shared server if you have
+a limited quota of space in your home directory. You can change the location of
+the cache with:
+```{r setAnnotationHubOption_CACHE, eval=FALSE}
+## NOT RUN: example of how to set the path to the cache
+setAnnotationHubOption("CACHE") <- "/shared/projects/projectname/AnnotationHub"
+## to check that the path was set correctly:
+getAnnotationHubOption("CACHE")
+```
+
+Then we create the `AnnotationHub` instance with:
+```{r AnnotationHub_create, eval=FALSE}
+ah <- AnnotationHub()
+# |=============================================================================| 100%
+#
+# snapshotDate(): 2024-10-28
+```
+This will take some time the first time you run it since there are a lot of 
+resources available. The `ah` object is quite big but it only contains pointers
+to online data, not the data itself which would be way too big to download all
+at once. The information content is changing frequently, which is why there is 
+a `snapshotDate`.  
+
+Let's take a look at the `ah` object:
+```{r ah, eval=FALSE}
+ah
+# AnnotationHub with 72100 records
+# # snapshotDate(): 2024-10-28
+# # $dataprovider: Ensembl, BroadInstitute, UCSC, ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/, FANTOM5,DLRP,IUPHAR,HPRD,STRING,SWISSPROT,TREMBL,ENSEMBL,CELLPHONEDB,...
+# # $species: Homo sapiens, Mus musculus, Drosophila melanogaster, Rattus norvegicus, Bos taurus, Pan troglodytes, Danio rerio, Gallus gallus, Sus scrofa, Mon...
+# # $rdataclass: GRanges, TwoBitFile, BigWigFile, EnsDb, Rle, OrgDb, SQLiteFile, ChainFile, TxDb, Inparanoid8Db
+# # additional mcols(): taxonomyid, genome, description, coordinate_1_based, maintainer, rdatadateadded, preparerclass, tags, rdatapath,
+# #   sourceurl, sourcetype 
+# # retrieve records with, e.g., 'object[["AH5012"]]' 
+# 
+#              title                                             
+#   AH5012   | Chromosome Band                                   
+#   AH5013   | STS Markers                                       
+#   AH5014   | FISH Clones                                       
+#   AH5015   | Recomb Rate                                       
+#   AH5016   | ENCODE Pilot                                      
+#   ...        ...                                               
+#   AH119506 | Ensembl 113 EnsDb for Zonotrichia albicollis      
+#   AH119507 | Ensembl 113 EnsDb for Zalophus californianus      
+#   AH119508 | Ensembl 113 EnsDb for Zosterops lateralis melanops
+#   AH119518 | MassBank CompDb for release 2024.06               
+#   AH119519 | MassBank CompDb for release 2024.11             
+```
+As of `2024-10-28`, the AnnotationHub contains **72,100 records**.  
+The `ah` object is organized as a vector (so its `length` is 72100 in my case).
+You can get information about a single resource by indexing with a single `[`; 
+using two brackets (`[[`) downloads the object:
+```{r ah1, eval=FALSE}
+ah[1]
+# AnnotationHub with 1 record
+# # snapshotDate(): 2024-10-28
+# # names(): AH5012
+# # $dataprovider: UCSC
+# # $species: Homo sapiens
+# # $rdataclass: GRanges
+# # $rdatadateadded: 2013-03-26
+# # $title: Chromosome Band
+# # $description: GRanges object from UCSC track 'Chromosome Band'
+# # $taxonomyid: 9606
+# # $genome: hg19
+# # $sourcetype: UCSC track
+# # $sourceurl: rtracklayer://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/cytoBand
+# # $sourcesize: NA
+# # $tags: c("cytoBand", "UCSC", "track", "Gene", "Transcript", "Annotation") 
+# # retrieve record with 'object[["AH5012"]]' 
+
+```
+
+Now, we can use various tools to narrow down the dataset or datasets that are 
+actually of interest for our analyses.  
+Let's say that we are looking for a dataset describing regions in the human 
+genome that are potential distal enhancers. The ENCODE project has typically 
+defined such regions using the data they have produced on e.g. histone marks 
+H3K27ac, H3K4me3 or DNAseI accessibility.
+
+Let's take a look at the data providers:
+```{r ah_provider, eval=FALSE}
+unique(ah$dataprovider)
+#  [1] "UCSC"                                                                                                      
+#  [2] "Ensembl"                                                                                                   
+#  [3] "RefNet"                                                                                                    
+#  [4] "Inparanoid8"                                                                                               
+# ...
+# [72] "ENCODE" 
+# ...
+# [83] "MGI"                                                                                                       
+# [84] "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/" 
+```
+
+Let's take a look at the available data from encode:
+```{r ah_encode, eval=FALSE}
+## Number of datasets available from ENCODE (note that there are more since in 
+## "dataprovider" there is also e.g. "ENCODE Project" or "ENCODE SCREEN v3"
+sum(ah$dataprovider == "ENCODE")
+# [1] 20
+# So there are 20 datasets from the dataprovider "ENCODE"
+
+## Take a look at the titles of these datasets
+ah[ah$dataprovider == "ENCODE"]$title
+#  [1] "hg38.Kundaje.GRCh38_unified_Excludable"                   "hg38.Bernstein.Mint_Excludable_GRCh38"                   
+#  [3] "hg38.Kundaje.GRCh38.Excludable"                           "hg38.Reddy.wgEncodeDacMapabilityConsensusExcludable.hg38"
+#  [5] "hg38.Wold.hg38mitoExcludable"                             "hg38.Yeo.eCLIP_Excludableregions.hg38liftover.bed.fixed" 
+#  [7] "hg19.Bernstein.Mint_Excludable_hg19"                      "hg19.Birney.wgEncodeDacMapabilityConsensusExcludable"    
+#  [9] "hg19.Crawford.wgEncodeDukeMapabilityRegionsExcludable"    "hg19.Wold.hg19mitoExcludable"                            
+# [11] "hg19.Yeo.eCLIP_Excludableregions.hg19"                    "mm10.Hardison.Excludable.full"                           
+# [13] "mm10.Hardison.psuExcludable.mm10"                         "mm10.Kundaje.anshul.Excludable.mm10"                     
+# [15] "mm10.Kundaje.mm10.Excludable"                             "mm10.Wold.mm10mitoExcludable"                            
+# [17] "mm9.Wold.mm9mitoExcludable"                               "ENCODE_dELS_regions"                                     
+# [19] "ENCODE_pELS_regions"                                      "ENCODE_PLS_regions"  
+```
+
+I wonder what *"PLS_regions"* are `r emo::ji("thinking_face")` and I want to 
+know more. So let's take a look at the object description:
+```{r ah_pls_desc, eval=FALSE}
+ah[ah$dataprovider == "ENCODE" & ah$title == "ENCODE_PLS_regions"]$description
+# [1] "A GRanges object containing regions of candidate cis-regulatory elements with promoter-like signatures as identified by the ENCODE SCREEN project. These consist of regions with high H3K4me3 and DNase signal, and located within 200 bp of a GENCODEtranscription start site."
+```
+OK, this looks very close to what we are looking for and I suppose that *pELS*
+and *dELS* refer to *proximal* and *distal* enhancer-like signatures. Let's 
+verify:
+```{r ah_dELS_desc, eval=FALSE}
+ah[ah$dataprovider == "ENCODE" & ah$title == "ENCODE_dELS_regions"]$description
+# [1] "A GRanges object containing regions of candidate cis-regulatory elements with distal enhancer-like signatures as identified by the ENCODE SCREEN project. These consist of regions with high H3K27ac and DNase signal, but low H3K4me3 signal, and located more than 2kb from GENCODE transcription start sites."
+```
+
+So now we can get the names of the object, download it and use it in R (it's a 
+*GRanges* object):
+```{r dwnld_, eval=FALSE}
+## Get the name / ID of the dataset
+names(ah[ah$dataprovider == "ENCODE" & ah$title == "ENCODE_dELS_regions"])
+# [1] "AH116727"
+
+## Download the dataset (use double brackets `[[`)
+dELS <- ah[["AH116727"]]
+# downloading 1 resources
+# retrieving 1 resource
+#   |===========================================================================| 100%
+# 
+# loading from cache
+# require(“GenomicRanges”)
+
+## Take a look at the object:
+dELS
+# GRanges object with 786756 ranges and 0 metadata columns:
+#            seqnames            ranges strand
+#               <Rle>         <IRanges>  <Rle>
+#        [1]     chr1     271227-271468      *
+#        [2]     chr1     274330-274481      *
+#        [3]     chr1     605331-605668      *
+#        [4]     chr1     727122-727350      *
+#        [5]     chr1     807737-807916      *
+#        ...      ...               ...    ...
+#   [786752]     chrY 26319537-26319816      *
+#   [786753]     chrY 26319848-26320155      *
+#   [786754]     chrY 26363541-26363721      *
+#   [786755]     chrY 26670949-26671287      *
+#   [786756]     chrY 26671293-26671478      *
+#   -------
+#   seqinfo: 24 sequences from an unspecified genome; no seqlengths
+
+## Since seqinfo has not been set, you may wonder which genome version was used.
+## You can get this info from the metadata of the ah object:
+ah['AH116727']$genome
+# [1] "hg38"
+```
+
+In another example, we will use some useful function to search the AnnotationHub:
+
+  - `subset` (or `[`) to do a specific subseting operation.
+  - `query` to do a command-line search over the metadata of the hub.
+  - `display` to get a Shiny interface in a browser, so you can browse the object.
+  
+We would like to know if there are any other dataset available for MITF in human.
+We first filter the hub to keep only the datasets obtained in human, or the
+datasets where the *species* is unspecified (`NA`), in case some metadata is 
+missing.
+```{r ah_subset, eval=FALSE}
+ah <- subset(ah, species %in% c(NA, "Homo sapiens"))
+```
+
+Then we query the metadata for MITF:
+```{r ah_mitf, eval=FALSE}
+query(ah, "MITF")
+# AnnotationHub with 1 record
+# # snapshotDate(): 2024-10-28
+# # names(): AH22280
+# # $dataprovider: Pazar
+# # $species: NA
+# # $rdataclass: GRanges
+# # $rdatadateadded: 2015-03-09
+# # $title: pazar_MITF_Strub_20120522.csv
+# # $description: TF - Target Gene file from pazar_MITF_Strub_20120522
+# # $taxonomyid: NA
+# # $genome: NA
+# # $sourcetype: CSV
+# # $sourceurl: http://www.pazar.info/tftargets/pazar_MITF_Strub_20120522.csv
+# # $sourcesize: 34964
+# # $tags: c("Pazar", "Transcription Factors") 
+# # retrieve record with 'object[["AH22280"]]' 
+```
+Indeed this dataset does not contain all the metadata but there is a link to the
+original source file and searching the web for "MITF, Strub" quickly gets you to
+[this publication](https://pubmed.ncbi.nlm.nih.gov/21258399/) where all the info
+is available to evaluate if this dataset is relevant for us.
+
+Finally, another way to mine the AnnotationHub is to use a browser with:
+```{r ah_display, eval=FALSE}
+outdata <- display(ah)
+```
+Note how we assign the call to the `display` function to an R object (`oudata`)
+so that we can actually capture the selection of datasets that we will make from
+the browser into our R session.
 
 
 # Importance of the annotation databases
@@ -2426,7 +2660,7 @@ Let's look at the overlap between genes expressed in RNA-seq data with
 genes associated to peaks (let's remind that peaks are associated to
 closest genes if no other evidences are used).
 
-```{r compareAnnot, eval=FALSE, fig.align = 'center', message=FALSE, include=FALSE}
+```{r compareAnnot, eval=TRUE, fig.align = 'center', message=FALSE, cache=TRUE}
 ## Download GTF files
 library(GenomicFeatures)
 
@@ -2448,10 +2682,10 @@ conv.symbol <- mapIds(x = org.Hs.eg.db,
                       column = c("SYMBOL"), # which type of ID we want
                       keytype = "ENSEMBL") # what type of ID we give
 
-m <- match(RNAseq$Ensembl.Gene.ID,
+mEnsRS <- match(RNAseq$Ensembl.Gene.ID,
            names(conv.symbol))
 
-RNAseq$SYMBOL <- conv.symbol[m]
+RNAseq$SYMBOL <- conv.symbol[mEnsRS]
 
 ## Now let's create a venn diagram that compares peak annotation with
 ## refseq or Ensembl
