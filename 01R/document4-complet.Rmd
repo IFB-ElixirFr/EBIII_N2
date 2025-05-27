@@ -1,0 +1,23 @@
+---
+title: "Un diagramme en bâtons"
+author: "Vincent Guillemot"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Génération des données
+
+```{r x}
+x <- 1:3
+```
+
+# Diagramme en bâtons
+
+```{r barplot}
+barplot(x, col = 1:3)
+```
+
