@@ -86,7 +86,7 @@ names(res.pca)
 
 ------------------------------------------------------------------------
 
-#### sdev 
+#### sdev
 
 les écarts types des composantes principales, c'est-à-dire les racines carrées des valeurs propres de la matrice de covariance/corrélation.
 
