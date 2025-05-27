@@ -1,0 +1,6 @@
+---
+output: html_document
+---
+
+ - Les chaussettes de l'archiduchesse sont-elles sèches ?
+ - **ARCHI**-_sèches_ ?
