@@ -53,6 +53,11 @@ txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 library(org.Hs.eg.db)
 library(clusterProfiler)
 library(pathview)
+library(Biostrings)
+#library(BSgenome.Hsapiens.UCSC.hg38)
+library(BCRANK)
+library(seqLogo)
+library(MotifDb)
 ```
 
 ```{r SetParamsHidden, eval=FALSE, echo=FALSE}
@@ -2332,6 +2337,129 @@ pathview(logFC.cl4, pathway.id = "hsa04210", species = "hsa")
 ```
 
 ![Pathview](images/hsa04210.pathview.png)
+
+# Motif analysis
+
+Often, one of the task associated with ChIP-seq experiments consists in
+analyzing the sequences that underlie the peaks. The aim could be to identify
+the binding motif of the factor that was immunoprecipitated, or to evaluate if 
+other factors could bind the same regions.  
+Here we will illustrate some basic tasks associated with these aims.
+
+First, load the *Biostrings* library and the *BSgenome* library corresponding to
+the hg38 human genome.
+```{r loadLibs_BSgenome, eval=FALSE}
+## Load the Biostrings library and the BSgenome library corresponding to hg38
+library(Biostrings)
+library(BSgenome.Hsapiens.UCSC.hg38) ## A "Hsapiens" object allows to access the genome sequence
+```
+
+## De novo motif discovery
+
+Here, we will search for motifs enriched under the SOX10 peaks. Since we do not
+start from a pre-defined list of motifs, e.g. available in a database like 
+[JASPAR](https://jaspar.elixir.no/) or [CIS-BP](https://cisbp.ccbr.utoronto.ca/), 
+this is called a *de novo* search. We start by sorting SOX10 
+peaks by qvalue and keep the sequences corresponding to the
+peak centers +/- 150bp:
+```{r sox10peaks_300bp, eval=FALSE, cache=TRUE}
+sox10peaks_300bp <- resize(peakfilt[["SOX10"]][order(peakfilt[["SOX10"]]$qvalue, decreasing = TRUE)],
+                           width = 300,
+                           fix = "center")
+```
+
+Next, we extract the underlying sequences and obtain a `DNAStringSet` object:
+```{r sox10seq, eval=FALSE, cache=TRUE}
+sox10_seq <- getSeq(Hsapiens, sox10peaks_300bp)
+```
+
+Most of the time, you will want to export these sequences as a fasta file and 
+run an external motif discovery program such as:
+
+  - [MEME](https://meme-suite.org/meme/) or
+  - [RSAT](https://rsat.france-bioinformatique.fr/)
+
+Note that the [TFBStools](https://www.bioconductor.org/packages/release/bioc/html/TFBSTools.html)
+package has a `runMEME` function that is a wrapper to MEME.    
+To export your the sequences you can use:
+```{r export_sox10_seq, eval=2}
+## Define the path to the fasta file:
+myfastafile = file.path(projPath, "data", "sox10peaks_300bp.fa")
+## NOT RUN: export sequences in fasta format
+writeXStringSet(sox10_seq, myfastafile)
+```
+
+Here, we will use the [BCRank](https://www.bioconductor.org/packages/release/bioc/html/BCRANK.html)
+package which can also perform a de novo search for motifs within R.
+The method takes a list of DNA sequences sorted by some measure of the 
+probability that a relevant motif is present. Here, the qvalue plays the role 
+of this measure, which is why we sorted the peaks by qvalue.
+`BCrank` takes quite a long time so be patient if you run this command.
+```{r bcrank, eval=FALSE, cache=TRUE}
+set.seed(123) #for reproducibility
+BCRANKout <- bcrank(myfastafile,
+                    restarts=25, 
+                    silent = TRUE,
+                    use.P1=TRUE,
+                    use.P2=TRUE)
+BCRANKout
+```
+
+We can extract the top motif found by BCRANK with:
+```{r bcrank_topmotif, eval=FALSE, cache=TRUE}
+topMotif <- toptable(BCRANKout, 1)
+```
+
+and extract the Position Weight Matrix (PWM) for this motif and plot the
+sequence logo with:
+```{r pwm_topmotif_bcrank, eval=FALSE, fig.align='center', cache=TRUE}
+pwmnorm_topmotif <- pwm(topMotif, normalize = TRUE)  #with normalize=TRUE the columns will sum to 1 (PFM)
+library(seqLogo)
+seqLogo(pwmnorm_topmotif)
+```
+
+
+## Searching for known motifs
+
+Another approach consists in searching for known motifs in the ChIP-seq peaks.
+Since the SOX10 has been extensively studied, there are already SOX10 binding
+motifs available in the databases.
+
+```{r loadMotifDb, message=FALSE, warning=FALSE, eval=FALSE}
+library(MotifDb)
+```
+
+Search for SOX10 motifs in JASPAR databases
+```{r motifdb, eval=FALSE, fig.align='center',cache=TRUE}
+sox10_motifs = MotifDb::query(MotifDb, c("hsapiens", "jaspar", "sox10"))
+## We keep the motif from JASPAR 2022
+Sox10JASP22 <- sox10_motifs[["Hsapiens-jaspar2022-SOX10-MA0442.2"]]
+seqLogo(Sox10JASP22)
+```
+
+MotifDb returns a position frequency matrix (PFM) with columns summing to 1.
+The number of sequences used to build the PFM are available in the 
+elementMetadata or mcols of the object. We use this information to obtain a PWM:
+```{r Sox10_PWM, eval=FALSE, cache=TRUE}
+nseq <- as.integer(mcols(sox10_motifs["Hsapiens-jaspar2022-SOX10-MA0442.2"])$sequenceCount)
+sox10pfm <- apply(round(nseq * Sox10JASP22,0), 2, as.integer)
+rownames(sox10pfm) <- rownames(Sox10JASP22)
+Sox10JASP22_PWM <- PWM(sox10pfm)
+```
+
+And then use this PWM to screen the whole genome:
+```{r matchPWM_SOX10_Hsapiens, eval=FALSE, cache=TRUE}
+SOX10_hg38 <- matchPWM(Sox10JASP22_PWM, Hsapiens, min.score="90%")
+```
+
+We can now overlap these motifs with our ChIPseq peaks:
+```{r ovl_SOX10hg38_peaks, eval=FALSE, cache=TRUE}
+##TODO: countOverlaps?
+```
+
+Assessing whether our peaks are significantly enriched for SOX10 motifs would
+probably require to extract random sequences that share common characteristics
+with SOX10 ChIP-seq peaks in terms of size and genomic distribution.
 
 
 # Enriching your analyses with published data
