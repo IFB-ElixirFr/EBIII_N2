@@ -3,3 +3,15 @@
 .Rproj.user
 # VG : j'ignore ce fichier mais
 EBIII_N2.Rproj
+DNAseq/GWAS_tutorial/data/*.vcf.gz
+DNAseq/GWAS_tutorial/data/*.vcf
+DNAseq/GWAS_tutorial/data/*.bed
+DNAseq/GWAS_tutorial/data/*.bim
+DNAseq/GWAS_tutorial/data/*.fam
+DNAseq/GWAS_tutorial/data/*.pgen
+DNAseq/GWAS_tutorial/data/*.pvar
+DNAseq/GWAS_tutorial/data/*.psam
+
+DNAseq/GWAS_tutorial/GWAS_tutorial.Rproj
+DNAseq/GWAS_tutorial/.Rhistory
+
