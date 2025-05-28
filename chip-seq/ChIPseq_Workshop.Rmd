@@ -54,7 +54,7 @@ library(org.Hs.eg.db)
 library(clusterProfiler)
 library(pathview)
 library(Biostrings)
-#library(BSgenome.Hsapiens.UCSC.hg38)
+library(BSgenome.Hsapiens.UCSC.hg38)
 library(BCRANK)
 library(seqLogo)
 library(MotifDb)
@@ -162,7 +162,8 @@ Before starting any project, it is a good idea to setup the path to the project
 as a variable. For example, we could use:
 ```{r set_projPath, eval=FALSE, echo=TRUE}
 projPath <- "/shared/projects/2514_ebiii_n2/chipseq"
-setwd(projPath)
+## If you are not using RStudio, you can change the working directory with:
+setwd(projPath) ##NOT RUN
 ```
 
 If you use an Rmd file and RStudio, when you open the file, your working
@@ -2362,14 +2363,14 @@ start from a pre-defined list of motifs, e.g. available in a database like
 this is called a *de novo* search. We start by sorting SOX10 
 peaks by qvalue and keep the sequences corresponding to the
 peak centers +/- 150bp:
-```{r sox10peaks_300bp, eval=FALSE, cache=TRUE}
+```{r sox10peaks_300bp, eval=TRUE, cache=TRUE}
 sox10peaks_300bp <- resize(peakfilt[["SOX10"]][order(peakfilt[["SOX10"]]$qvalue, decreasing = TRUE)],
                            width = 300,
                            fix = "center")
 ```
 
 Next, we extract the underlying sequences and obtain a `DNAStringSet` object:
-```{r sox10seq, eval=FALSE, cache=TRUE}
+```{r sox10seq, eval=TRUE, cache=TRUE}
 sox10_seq <- getSeq(Hsapiens, sox10peaks_300bp)
 ```
 
@@ -2382,10 +2383,10 @@ run an external motif discovery program such as:
 Note that the [TFBStools](https://www.bioconductor.org/packages/release/bioc/html/TFBSTools.html)
 package has a `runMEME` function that is a wrapper to MEME.    
 To export your the sequences you can use:
-```{r export_sox10_seq, eval=2}
+```{r export_sox10_seq, eval=FALSE}
 ## Define the path to the fasta file:
-myfastafile = file.path(projPath, "data", "sox10peaks_300bp.fa")
-## NOT RUN: export sequences in fasta format
+myfastafile = file.path("data", "sox10peaks_300bp.fa")
+## NOT RUN (already exported): export sequences in fasta format
 writeXStringSet(sox10_seq, myfastafile)
 ```
 
@@ -2394,30 +2395,42 @@ package which can also perform a de novo search for motifs within R.
 The method takes a list of DNA sequences sorted by some measure of the 
 probability that a relevant motif is present. Here, the qvalue plays the role 
 of this measure, which is why we sorted the peaks by qvalue.
-`BCrank` takes quite a long time so be patient if you run this command.
-```{r bcrank, eval=FALSE, cache=TRUE}
+`BCrank` takes a long time to run, so we will not run the commands below.
+```{r bcrank, eval=FALSE}
+##NOT RUN (too long...)
 set.seed(123) #for reproducibility
 BCRANKout <- bcrank(myfastafile,
-                    restarts=25, 
+                    restarts = 25, 
                     silent = TRUE,
-                    use.P1=TRUE,
-                    use.P2=TRUE)
+                    use.P1 = TRUE,
+                    use.P2 = TRUE)
+saveRDS(BCRANKout, file.path("data", "BCRANKout.rds"))
+```
+
+Instead, we ran the commands for you and saved the object as an rds file. 
+So we can just import this file and take a look at it:
+```{r bcrankout_import, eval=TRUE, cache=TRUE}
+BCRANKout <- readRDS(file.path("data", "BCRANKout.rds"))
 BCRANKout
 ```
 
 We can extract the top motif found by BCRANK with:
-```{r bcrank_topmotif, eval=FALSE, cache=TRUE}
+```{r bcrank_topmotif, eval=TRUE, cache=TRUE}
 topMotif <- toptable(BCRANKout, 1)
 ```
 
 and extract the Position Weight Matrix (PWM) for this motif and plot the
 sequence logo with:
-```{r pwm_topmotif_bcrank, eval=FALSE, fig.align='center', cache=TRUE}
-pwmnorm_topmotif <- pwm(topMotif, normalize = TRUE)  #with normalize=TRUE the columns will sum to 1 (PFM)
+```{r pwm_topmotif_bcrank, eval=TRUE, fig.align='center', cache=TRUE}
+pwmnorm_topmotif <- BCRANK::pwm(topMotif, normalize = TRUE)  #with normalize=TRUE the columns will sum to 1 (PFM)
 library(seqLogo)
-seqLogo(pwmnorm_topmotif)
+seqLogo(reverseComplement(pwmnorm_topmotif))
 ```
 
+You can go to the [JASPAR](https://jaspar.elixir.no/) website and search "SOX10".
+You will see that the first motif found by BCRANK is very similar to the
+motifs that have been found for SOX10. We will actually retrieve and take a look
+at one of these motifs below.
 
 ## Searching for known motifs
 
@@ -2430,7 +2443,7 @@ library(MotifDb)
 ```
 
 Search for SOX10 motifs in JASPAR databases
-```{r motifdb, eval=FALSE, fig.align='center',cache=TRUE}
+```{r motifdb, eval=TRUE, fig.align='center',cache=TRUE}
 sox10_motifs = MotifDb::query(MotifDb, c("hsapiens", "jaspar", "sox10"))
 ## We keep the motif from JASPAR 2022
 Sox10JASP22 <- sox10_motifs[["Hsapiens-jaspar2022-SOX10-MA0442.2"]]
@@ -2440,26 +2453,59 @@ seqLogo(Sox10JASP22)
 MotifDb returns a position frequency matrix (PFM) with columns summing to 1.
 The number of sequences used to build the PFM are available in the 
 elementMetadata or mcols of the object. We use this information to obtain a PWM:
-```{r Sox10_PWM, eval=FALSE, cache=TRUE}
+```{r Sox10_PWM, eval=TRUE, cache=TRUE}
 nseq <- as.integer(mcols(sox10_motifs["Hsapiens-jaspar2022-SOX10-MA0442.2"])$sequenceCount)
 sox10pfm <- apply(round(nseq * Sox10JASP22,0), 2, as.integer)
 rownames(sox10pfm) <- rownames(Sox10JASP22)
 Sox10JASP22_PWM <- PWM(sox10pfm)
 ```
 
-And then use this PWM to screen the whole genome:
-```{r matchPWM_SOX10_Hsapiens, eval=FALSE, cache=TRUE}
-SOX10_hg38 <- matchPWM(Sox10JASP22_PWM, Hsapiens, min.score="90%")
+And then use this PWM to screen the whole genome. Again, this takes some time so
+we saved the rds object for you
+```{r matchPWM_SOX10_Hsapiens, eval=FALSE}
+## NOT RUN (too long...)
+SOX10_hg38 <- matchPWM(Sox10JASP22_PWM, 
+                       Hsapiens, 
+                       min.score="90%")
+saveRDS(SOX10_hg38, file.path("data", "SOX10_hg38.rds"))
+```
+
+We obtain a GRanges with the location of all the motifs:
+```{r SOX10_hg38_import, eval=TRUE, cache=TRUE}
+SOX10_hg38 <- readRDS(file.path("data", "SOX10_hg38.rds"))
+SOX10_hg38
 ```
 
 We can now overlap these motifs with our ChIPseq peaks:
-```{r ovl_SOX10hg38_peaks, eval=FALSE, cache=TRUE}
-##TODO: countOverlaps?
+```{r ovl_SOX10hg38_peaks, eval=TRUE, cache=TRUE}
+## We set a minimum overlap of 11bp (size of the motif) to count only
+## the motifs that are fully within the peaks
+count_sox10 <- countOverlaps(sox10peaks_300bp,
+                             SOX10_hg38,
+                             minoverlap = 11)
+## Number of peaks that have 0, 1, 2, etc. SOX10 binding sites
+table(count_sox10)
+## Percentage of our peaks that have at least one SOX10 binding site:
+100*mean(count_sox10>=1)
 ```
 
+We see that more than `r round(100*mean(count_sox10>=1), 1)`% of the peaks
+contain at least one of these motifs.  
 Assessing whether our peaks are significantly enriched for SOX10 motifs would
 probably require to extract random sequences that share common characteristics
-with SOX10 ChIP-seq peaks in terms of size and genomic distribution.
+with SOX10 ChIP-seq peaks in terms of size and genomic distribution and evaluate
+their enrichment in SOX10 binding sites.  
+Here as a substitute, let's evaluate the frequency of SOX10 peaks in a random
+selection of promoters
+```{r count_sox10_tss, eval=TRUE, cache=TRUE}
+set.seed(123) # for reproducibility
+count_sox10_tss <- countOverlaps(promoters(genes(txdb), upstream=300, downstream=0)[sample.int(length(sox10peaks_300bp))],
+                                 SOX10_hg38,
+                                 minoverlap = 11)
+## Percentage of 300bp promoters that contain SOX10 peaks:
+100*mean(count_sox10_tss>=1)
+```
+This suggests that the enrichment of SOX10 binding sites is very significant.
 
 
 # Enriching your analyses with published data
