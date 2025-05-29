@@ -967,7 +967,9 @@ In addition, `OrganismDb` packages were added based on the [OrganismDbi](https:/
   
 Packages are available in Bioconductor to build your own annotation packages. These include [AnnotationForge](https://bioconductor.org/packages/release/bioc/html/AnnotationForge.html) and [GenomicFeatures](https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html) and [txdbmaker](https://bioconductor.org/packages/release/bioc/html/txdbmaker.html)
  
-Finally, the [AnnotationHub](https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html) package provides an interface to access a large resource of genomic files, which can be used as extra "annotations".  
+The [AnnotationHub](https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html) package also provides an interface to access a large resource of genomic files, which can be used as extra "annotations".  
+
+To get more information about annotations in Bioconductor, take a look at the [annotation workflow](https://www.bioconductor.org/packages/release/workflows/html/annotation.html).  
   
 ## Accessing annotations 
 There are 4 basic functions to access nearly all annotations:  
