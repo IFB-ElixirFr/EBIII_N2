@@ -11,7 +11,8 @@ params:
   ensembl: 103
   assembly: hg38
   organism: Homo sapiens
-  workdir: /DATA/WORK/Enseignement/2025_EBAII_ChIPseq/EBIII_N2/chip-seq
+  workdir: /shared/projects/2514_ebiii_n2/EBIII_N2/chip-seq
+#  workdir: /DATA/WORK/Enseignement/2025_EBAII_ChIPseq/EBIII_N2/chip-seq
   mapping.chipseq: stats_mappingChIPseq.tsv
   peakcalling.chipseq: stats_peakCalling.tsv
   brg1: BRG1siCTRL_CHIP-seq_peaks.narrowPeak
