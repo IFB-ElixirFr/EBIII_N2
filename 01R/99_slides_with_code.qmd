@@ -1,0 +1,136 @@
+---
+title: "Slides with code"
+author: "Vincent Guillemot"
+date: "`r Sys.Date()`"
+format: 
+  pptx:
+    reference-doc: template.pptx
+execute: 
+  echo: true
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(pheatmap)
+library(patchwork)
+
+theme_set(theme_bw())
+```
+
+## Import COVID data
+
+```{r import}
+covid <- read_csv("data/covid.csv")
+covid
+```
+
+
+## Pheatmap (small)
+
+```{r pheatmap simulation}
+library(pheatmap)
+I <- 8
+J <- 5
+set.seed(543)
+sig <- Matrix::bdiag(
+        0.8 + diag(0.2, 3),
+        -0.7 + diag(1.7, 2))
+mat <- rbind(
+    MASS::mvrnorm(
+      n = I/2,
+      mu = c(-1, -1, 0, 0, 1),
+      Sigma = sig),
+    MASS::mvrnorm(
+      n = I/2,
+      mu = c(1, 1, 0, 0, 0),
+      Sigma = sig))
+rownames(mat) <- sprintf("row %i", 1:I)
+colnames(mat) <- sprintf("col %i", 1:J)
+
+pheatmap(
+  mat = mat,
+  clustering_method = "ward.D2",
+  cellwidth = 20, cellheight = 20, 
+  border_color = "black")
+```
+
+
+## Pheatmap example
+
+```{r pheatmap minicovid}
+library(pheatmap)
+select_cases <- covid$status == "nCOV"
+minicovid <- as.data.frame(covid[select_cases, c("IL1A", "IL1B", "IL1R1", "CD4", "CD8A", "CD8B")])
+rownames(minicovid) <- with(covid[select_cases,], paste0(id, " t=", time))
+pheatmap(minicovid, clustering_method = "ward.D2", clustering_distance_cols = as.dist(1 - cor(minicovid)), cellwidth = 15, color = colorRampPalette(c("darkorchid3", "linen", "limegreen"))(100), border_color = "white")
+```
+
+
+
+## Simple dplyr
+
+```{r simple}
+covid %>%
+  filter(status == "HC") %>%
+  select(IL1R1) %>%
+  summarize(meanIL1R1 = mean(IL1R1))
+```
+
+## Grouping and summarizing
+
+
+:::::: {.columns style="font-size: 100%;"}
+
+::: {.column}
+
+Grouping with `group_by`
+
+```{r}
+covid |>
+  group_by(id) |>
+  select(id, time, status, IFNG)
+```
+
+:::
+
+
+::: {.column}
+
+Summarizing with `summarize`
+
+```{r}
+covid |>
+  group_by(status) |>
+  summarize(mean_IFNG = mean(IFNG))
+```
+
+:::
+
+
+::::::
+ 
+## Patchwork
+
+
+```{r pathchwork of plots}
+il1a <- covid |>
+  filter(status == "nCOV") |>
+  ggplot(aes(x = time, y = IL1A, color = id)) + 
+  geom_point() + 
+  geom_line()
+
+il1b <- covid |>
+  filter(status == "nCOV") |>
+  ggplot(aes(x = time, y = IL1B, color = id)) + 
+  geom_point() + 
+  geom_line()
+
+(il1a | il1b ) +
+  plot_layout(guides = "collect") & 
+  theme(legend.position = "bottom")
+
+
+```
+
