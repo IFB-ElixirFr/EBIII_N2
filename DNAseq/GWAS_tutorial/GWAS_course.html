@@ -206,9 +206,7 @@ Cathy PHILIPPE
 <section id="qui-suis-je" class="slide level2">
 <h2>Qui suis-je ?</h2>
 <div class="columns">
-<div class="column" style="width:50%;">
-<p><img data-src="GWASoise.png"></p>
-</div><div class="column" style="width:50%;">
+<p><img data-src="images/GWASoise.png"></p><div class="column" style="width:50%;">
 <p><strong>Nom :</strong> Cathy PHILIPPE</p>
 <p><strong>Institut de Recherche :</strong> CEA</p>
 <p><strong>Thèmes de recherche :</strong> Apprentissage statistique, intégration de données, imagerie-génétique.</p>
@@ -237,7 +235,11 @@ Cathy PHILIPPE
 </ul></li>
 <li><p>Production et interprétation des graphes</p></li>
 </ul>
-<p>Le cours sera basé sur les GWAS chez l’Homme, il est inspiré et adapté du cours de Matti Pirinen, Université d’Helsinki : <a href="https://www.mv.helsinki.fi/home/mjxpirin/GWAS_course/" class="uri">https://www.mv.helsinki.fi/home/mjxpirin/GWAS_course/</a></p>
+<p>Le cours sera basé sur les GWAS chez l’Homme, il est inspiré et adapté :</p>
+<ul>
+<li><p>du cours de Matti Pirinen, Université d’Helsinki : <a href="https://www.mv.helsinki.fi/home/mjxpirin/GWAS_course/" class="uri">https://www.mv.helsinki.fi/home/mjxpirin/GWAS_course/</a> et de</p></li>
+<li><p>l’article Marees et al.&nbsp;Int J Methods Psychiatr Res. 2018 <a href="https://doi.org/10.1002/mpr.1608" class="uri">https://doi.org/10.1002/mpr.1608</a></p></li>
+</ul>
 </section>
 <section id="quest-ce-quune-étude-dassociation-pangénomique" class="slide level2">
 <h2>Qu’est-ce qu’une étude d’association pangénomique ?</h2>
@@ -258,7 +260,7 @@ Cathy PHILIPPE
 <section id="les-différents-types-de-variants-génétiques" class="slide level2">
 <h2>Les différents types de variants génétiques</h2>
 
-<img data-src="genetic_variations.jpg" width="695" class="r-stretch quarto-figure-center"><p class="caption">Cardoso et al.&nbsp;2015 Front. Bioeng. Biotechnol., 16 February 2015 | https://doi.org/10.3389/fbioe.2015.00013</p></section>
+<img data-src="images/genetic_variations.jpg" class="r-stretch quarto-figure-center"><p class="caption">Cardoso et al.&nbsp;2015 Front. Bioeng. Biotechnol., 16 February 2015 | https://doi.org/10.3389/fbioe.2015.00013</p></section>
 <section id="single-nucleotide-polymorphisms" class="slide level2">
 <h2>Single Nucleotide Polymorphisms</h2>
 <div class="columns">
@@ -266,7 +268,7 @@ Cathy PHILIPPE
 <p>Genome dans la population</p>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="SNP.png" width="560"></p>
+<p><img data-src="images/SNP.png"></p>
 <figcaption>SNP, allèle majeur G, allèle mineur T, MAF = 4%</figcaption>
 </figure>
 </div>
@@ -274,7 +276,7 @@ Cathy PHILIPPE
 <p>Génotypes à ce locus</p>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="genotypes.png" width="427"></p>
+<p><img data-src="images/genotypes.png"></p>
 <figcaption>Sous équilibre de Hardy-Weinberg</figcaption>
 </figure>
 </div>
@@ -316,10 +318,10 @@ Cathy PHILIPPE
 <section id="léquilibre-de-hardy-weinberg-iii" class="slide level2">
 <h2>L’équilibre de Hardy-Weinberg III</h2>
 <p>Supposons qu’à ce locus, les deux allèles d’un individu sont échantillonnés au hasard dans une pop° HW, alors les fréquences relatives des génotypes suivent la distribution binomiale <span class="math inline">\(Bin(2,f)\)</span> :</p>
-<table class="caption-top" style="width:96%;">
+<table class="caption-top" style="width:93%;">
 <colgroup>
-<col style="width: 45%">
-<col style="width: 50%">
+<col style="width: 44%">
+<col style="width: 48%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -375,22 +377,166 @@ Cathy PHILIPPE
 <li><p><strong>Le respect de l’équilibre de Hardy-Weinberg</strong></p></li>
 </ol>
 </section>
+<section id="formats-de-fichiers-plink" class="slide level2">
+<h2>Formats de fichiers PLINK</h2>
+<table class="caption-top" style="width:99%;">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 65%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>format de fichier</th>
+<th>contenu</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>my_data.bed</td>
+<td>Génotypes codés en binaire</td>
+</tr>
+<tr class="even">
+<td>my_data.bim</td>
+<td>Informations sur les variants</td>
+</tr>
+<tr class="odd">
+<td>my_data.fam</td>
+<td>Informations sur les individus</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="contenu-du-fichier-.bim" class="slide level2">
+<h2>Contenu du fichier .bim</h2>
+<table class="caption-top" style="width:96%;">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 14%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Chr</th>
+<th>ID SNP (RSID)</th>
+<th>POS génétique</th>
+<th>POS physique</th>
+<th>Allèle 1 (svt maj)</th>
+<th>Allèle 2 (svt min)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>rs2185539</td>
+<td>0</td>
+<td>556738</td>
+<td>T</td>
+<td>C</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>rs11510103</td>
+<td>0</td>
+<td>557616</td>
+<td>G</td>
+<td>A</td>
+</tr>
+<tr class="odd">
+<td>X</td>
+<td>rs11240767</td>
+<td>0</td>
+<td>718814</td>
+<td>T</td>
+<td>C</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="contenu-du-fichier-.fam" class="slide level2">
+<h2>Contenu du fichier .fam</h2>
+<table class="caption-top" style="width:95%;">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 18%">
+<col style="width: 18%">
+<col style="width: 18%">
+<col style="width: 9%">
+<col style="width: 18%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>FID</th>
+<th>IID</th>
+<th>PID</th>
+<th>MID</th>
+<th>Sexe</th>
+<th>Phénotype</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>FAM1</td>
+<td>IND001</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>-9</td>
+</tr>
+<tr class="even">
+<td>FAM1</td>
+<td>IND002</td>
+<td>0</td>
+<td>0</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>FAM1</td>
+<td>IND003</td>
+<td>IND001</td>
+<td>IND002</td>
+<td>2</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="données-manquantes-par-snp-et-par-individu" class="slide level2">
 <h2>Données manquantes par SNP et par individu</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode numberSource {bash} number-lines code-with-copy"><code class="sourceCode"><span id="cb1-1"><a href=""></a>#| label: plink missing</span>
-<span id="cb1-2"><a href=""></a>#| eval: false</span>
-<span id="cb1-3"><a href=""></a>#| echo: true</span>
-<span id="cb1-4"><a href=""></a></span>
-<span id="cb1-5"><a href=""></a>plink --bfile HapMap_3_r3_1 --missing</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>#| label: plink missing
+#| eval: false
+#| echo: true
+
+plink --bfile data/HapMap_3_r3_1 --missing --out data/plink</code></pre>
 <p>Sortie : plink.imiss and plink.lmiss, ces fichiers indiquent respectivement la proportion de SNP manquants par individu et la proportion d’individus manquants par SNP.</p>
 </section>
 <section id="visualiser-les-résultats" class="slide level2">
 <h2>Visualiser les résultats</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource {bash} number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href=""></a>#| label: R hist missing</span>
-<span id="cb2-2"><a href=""></a>#| eval: false</span>
-<span id="cb2-3"><a href=""></a>#| echo: true</span>
-<span id="cb2-4"><a href=""></a></span>
-<span id="cb2-5"><a href=""></a>Rscript --no-save hist_miss.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>#| label: R hist missing
+#| eval: false
+#| echo: true
+
+Rscript --no-save scripts/hist_miss.R</code></pre>
+</section>
+<section class="slide level2">
+
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>plink.imiss</th>
+<th>plink.lmiss</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><img data-src="images/imiss.png"></td>
+<td><img data-src="images/lmiss.png"></td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="snp-manquants" class="slide level2">
 <h2>SNP manquants</h2>
@@ -401,21 +547,17 @@ Cathy PHILIPPE
 <span id="cb3-4"><a href=""></a></span>
 <span id="cb3-5"><a href=""></a># Filtrer les loci où plus de 5\% des individus ont des données manquantes.</span>
 <span id="cb3-6"><a href=""></a></span>
-<span id="cb3-7"><a href=""></a>plink --bfile HapMap_3_r3_1 --geno 0.2 # Delete SNPs with missingness &gt;0.2 </span>
-<span id="cb3-8"><a href=""></a>                            --mind 0.2 # Delete individuals with missingness &gt;0.2.</span>
-<span id="cb3-9"><a href=""></a>                            --make-bed --out HapMap_3_r3_2</span>
-<span id="cb3-10"><a href=""></a>                            </span>
-<span id="cb3-11"><a href=""></a># Delete individuals with missingness &gt;0.2.</span>
+<span id="cb3-7"><a href=""></a>plink --bfile data/HapMap_3_r3_1 --geno 0.2 --mind 0.2 --make-bed --out data/HapMap_3_r3_2</span>
+<span id="cb3-8"><a href=""></a># --geno 0.2 = Delete SNPs with missingness &gt;0.2 </span>
+<span id="cb3-9"><a href=""></a># --mind 0.2 = Delete individuals with missingness &gt;0.2.</span>
+<span id="cb3-10"><a href=""></a></span>
+<span id="cb3-11"><a href=""></a>plink --bfile data/HapMap_3_r3_2 --make-bed --out data/HapMap_3_r3_3</span>
 <span id="cb3-12"><a href=""></a></span>
-<span id="cb3-13"><a href=""></a>plink --bfile HapMap_3_r3_2 --make-bed --out HapMap_3_r3_3</span>
-<span id="cb3-14"><a href=""></a></span>
-<span id="cb3-15"><a href=""></a># Delete SNPs with missingness &gt;0.02.</span>
-<span id="cb3-16"><a href=""></a></span>
-<span id="cb3-17"><a href=""></a>plink --bfile HapMap_3_r3_3 --geno 0.02 --make-bed --out HapMap_3_r3_4</span>
-<span id="cb3-18"><a href=""></a></span>
-<span id="cb3-19"><a href=""></a># Delete individuals with missingness &gt;0.02.</span>
-<span id="cb3-20"><a href=""></a></span>
-<span id="cb3-21"><a href=""></a>plink --bfile HapMap_3_r3_4 --mind 0.02 --make-bed --out HapMap_3_r3_5</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-13"><a href=""></a># Delete SNPs with missingness &gt;0.02.</span>
+<span id="cb3-14"><a href=""></a>plink --bfile data/HapMap_3_r3_3 --geno 0.02 --make-bed --out data/HapMap_3_r3_4</span>
+<span id="cb3-15"><a href=""></a></span>
+<span id="cb3-16"><a href=""></a># Delete individuals with missingness &gt;0.02.</span>
+<span id="cb3-17"><a href=""></a>plink --bfile data/HapMap_3_r3_4 --mind 0.02 --make-bed --out data/HapMap_3_r3_5</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="incohérences-liées-au-sexe" class="slide level2">
 <h2>Incohérences liées au sexe</h2>
@@ -450,9 +592,9 @@ Cathy PHILIPPE
 <h2>Interprétation de stat F</h2>
 <table class="caption-top" style="width:99%;">
 <colgroup>
-<col style="width: 22%">
-<col style="width: 46%">
-<col style="width: 28%">
+<col style="width: 19%">
+<col style="width: 43%">
+<col style="width: 36%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -486,22 +628,41 @@ Cathy PHILIPPE
 <span id="cb4-2"><a href=""></a>#| eval: false</span>
 <span id="cb4-3"><a href=""></a>#| echo: true</span>
 <span id="cb4-4"><a href=""></a></span>
-<span id="cb4-5"><a href=""></a>plink --bfile HapMap_3_r3_5 --check-sex</span>
+<span id="cb4-5"><a href=""></a>plink --bfile data/HapMap_3_r3_5 --check-sex --out results/plink</span>
 <span id="cb4-6"><a href=""></a></span>
 <span id="cb4-7"><a href=""></a># Generate plots to visualize the sex-check results.</span>
 <span id="cb4-8"><a href=""></a></span>
-<span id="cb4-9"><a href=""></a>Rscript --no-save gender_check.R # These checks indicate that there is one woman with a sex discrepancy, F value of 0.99. (When using other datasets often a few discrepancies will be found).</span>
+<span id="cb4-9"><a href=""></a>Rscript --no-save scripts/gender_check.R # These checks indicate that there is one woman with a sex discrepancy, F value of 0.99. (When using other datasets often a few discrepancies will be found).</span>
 <span id="cb4-10"><a href=""></a></span>
 <span id="cb4-11"><a href=""></a># 1) Delete individuals with sex discrepancy.</span>
 <span id="cb4-12"><a href=""></a># This command generates a list of individuals with the status PROBLEM. </span>
-<span id="cb4-13"><a href=""></a>grep "PROBLEM" plink.sexcheck| awk '{print$1,$2}'&gt; sex_discrepancy.txt </span>
+<span id="cb4-13"><a href=""></a>grep "PROBLEM" results/plink.sexcheck| awk '{print$1,$2}'&gt; results/sex_discrepancy.txt </span>
 <span id="cb4-14"><a href=""></a></span>
 <span id="cb4-15"><a href=""></a># This command removes the list of individuals with the status PROBLEM.</span>
-<span id="cb4-16"><a href=""></a>plink --bfile HapMap_3_r3_5 --remove sex_discrepancy.txt --make-bed --out HapMap_3_r3_6 </span>
+<span id="cb4-16"><a href=""></a>plink --bfile data/HapMap_3_r3_5 --remove results/sex_discrepancy.txt --make-bed --out data/HapMap_3_r3_6 </span>
 <span id="cb4-17"><a href=""></a></span>
 <span id="cb4-18"><a href=""></a># 2) impute-sex.</span>
 <span id="cb4-19"><a href=""></a># This imputes the sex based on the genotype information into your data set.</span>
-<span id="cb4-20"><a href=""></a>plink --bfile HapMap_3_r3_5 --impute-sex --make-bed --out HapMap_3_r3_6 </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-20"><a href=""></a>plink --bfile data/HapMap_3_r3_5 --impute-sex --make-bed --out data/HapMap_3_r3_6 </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="visualisation" class="slide level2">
+<h2>Visualisation</h2>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Gender distribution</th>
+<th>Women distribution</th>
+<th>Men distribution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><img data-src="images/gender.png"></td>
+<td><img data-src="images/women.png"></td>
+<td><img data-src="images/men.png"></td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="ne-garder-que-les-variants-autosomaux-et-communs" class="slide level2">
 <h2>Ne garder que les variants autosomaux et communs</h2>
@@ -510,25 +671,36 @@ Cathy PHILIPPE
 <span id="cb5-3"><a href=""></a>#| echo: true</span>
 <span id="cb5-4"><a href=""></a></span>
 <span id="cb5-5"><a href=""></a># Select autosomal SNPs only (i.e., from chromosomes 1 to 22).</span>
-<span id="cb5-6"><a href=""></a></span>
-<span id="cb5-7"><a href=""></a>awk '{ if ($1 &gt;= 1 &amp;&amp; $1 &lt;= 22) print $2 }' HapMap_3_r3_6.bim &gt; snp_1_22.txt plink --bfile HapMap_3_r3_6 --extract snp_1_22.txt --make-bed --out HapMap_3_r3_7</span>
-<span id="cb5-8"><a href=""></a></span>
-<span id="cb5-9"><a href=""></a># Generate a plot of the MAF distribution.</span>
-<span id="cb5-10"><a href=""></a></span>
-<span id="cb5-11"><a href=""></a>plink --bfile HapMap_3_r3_7 --freq --out MAF_check Rscript --no-save MAF_check.R</span>
+<span id="cb5-6"><a href=""></a>awk '{ if ($1 &gt;= 1 &amp;&amp; $1 &lt;= 22) print $2 }' data/HapMap_3_r3_6.bim &gt; results/snp_1_22.txt </span>
+<span id="cb5-7"><a href=""></a></span>
+<span id="cb5-8"><a href=""></a>plink --bfile data/HapMap_3_r3_6 --extract results/snp_1_22.txt --make-bed --out data/HapMap_3_r3_7</span>
+<span id="cb5-9"><a href=""></a></span>
+<span id="cb5-10"><a href=""></a># Generate a plot of the MAF distribution.</span>
+<span id="cb5-11"><a href=""></a>plink --bfile data/HapMap_3_r3_7 --freq --out results/MAF_check </span>
 <span id="cb5-12"><a href=""></a></span>
-<span id="cb5-13"><a href=""></a># Remove SNPs with a low MAF frequency.</span>
+<span id="cb5-13"><a href=""></a>Rscript --no-save scripts/MAF_check.R</span>
 <span id="cb5-14"><a href=""></a></span>
-<span id="cb5-15"><a href=""></a>plink --bfile HapMap_3_r3_7 --maf 0.05 --make-bed --out HapMap_3_r3_8 # 1073226 SNPs are left # A conventional MAF threshold for a regular GWAS is between 0.01 or 0.05, depending on sample size.</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-15"><a href=""></a># Remove SNPs with a low MAF frequency.</span>
+<span id="cb5-16"><a href=""></a>plink --bfile data/HapMap_3_r3_7 --maf 0.05 --make-bed --out data/HapMap_3_r3_8 </span>
+<span id="cb5-17"><a href=""></a># 1073226 SNPs are left </span>
+<span id="cb5-18"><a href=""></a># A conventional MAF threshold for a regular GWAS is between 0.01 or 0.05, depending on sample size.</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
+<section id="visualisation-de-distribution-de-la-maf" class="slide level2">
+<h2>Visualisation de distribution de la MAF</h2>
+
+<img data-src="images/maf_distrib.png" class="r-stretch"></section>
 <section id="le-test-hwe" class="slide level2">
 <h2>Le test HWE</h2>
 <p>Test du <span class="math inline">\(\chi²\)</span> à 1 df où les comptages attendus sont calculés en supposant HWE compte tenu des fréquences des allèles.</p>
-<p><span class="math inline">\(N\)</span> individus d’une pop°, <span class="math inline">\(n_0\)</span>, <span class="math inline">\(n_1\)</span>, <span class="math inline">\(n_2\)</span> génotypes observés pour les génotypes 0, 1 et 2, respectivement, avec <span class="math inline">\(N=n_0+n_1+n_2\)</span>.</p>
+<ul>
+<li><p><span class="math inline">\(N\)</span> individus d’une pop°,</p></li>
+<li><p><span class="math inline">\(n_0\)</span>, <span class="math inline">\(n_1\)</span>, <span class="math inline">\(n_2\)</span> observés pour les génotypes 0, 1 et 2, respectivement,</p></li>
+<li><p>avec <span class="math inline">\(N=n_0+n_1+n_2\)</span>.</p></li>
+</ul>
 <table class="caption-top">
 <colgroup>
-<col style="width: 53%">
 <col style="width: 46%">
+<col style="width: 53%">
 </colgroup>
 <tbody>
 <tr class="odd">
@@ -558,19 +730,34 @@ Cathy PHILIPPE
 <span id="cb6-4"><a href=""></a></span>
 <span id="cb6-5"><a href=""></a>Check the distribution of HWE p-values of all SNPs.</span>
 <span id="cb6-6"><a href=""></a></span>
-<span id="cb6-7"><a href=""></a>plink --bfile HapMap_3_r3_8 --hardy # Selecting SNPs with HWE p-value below 0.00001, required for one of the two plot generated by the next Rscript, allows to zoom in on strongly deviating SNPs. awk '{ if ($9 &lt;0.00001) print $0 }' plink.hwe&gt;plinkzoomhwe.hwe Rscript --no-save hwe.R</span>
+<span id="cb6-7"><a href=""></a>plink --bfile data/HapMap_3_r3_8 --hardy --out results/plink # Selecting SNPs with HWE p-value below 0.00001, required for one of the two plot generated by the next Rscript, allows to zoom in on strongly deviating SNPs. </span>
 <span id="cb6-8"><a href=""></a></span>
-<span id="cb6-9"><a href=""></a># By default the --hwe option in plink only filters for controls.</span>
+<span id="cb6-9"><a href=""></a>awk '{ if ($9 &lt;0.00001) print $0 }' results/plink.hwe &gt; results/plinkzoomhwe.hwe </span>
 <span id="cb6-10"><a href=""></a></span>
-<span id="cb6-11"><a href=""></a># Therefore, we use two steps, first we use a stringent HWE threshold for controls, followed by a less stringent threshold for the case data.</span>
+<span id="cb6-11"><a href=""></a>Rscript --no-save scripts/hwe.R</span>
 <span id="cb6-12"><a href=""></a></span>
-<span id="cb6-13"><a href=""></a>plink --bfile HapMap_3_r3_8 --hwe 1e-6 --make-bed --out HapMap_hwe_filter_step1</span>
+<span id="cb6-13"><a href=""></a># By default the --hwe option in plink only filters for controls.</span>
 <span id="cb6-14"><a href=""></a></span>
-<span id="cb6-15"><a href=""></a># The HWE threshold for the cases filters out only SNPs which deviate extremely from HWE.</span>
+<span id="cb6-15"><a href=""></a># Therefore, we use two steps, first we use a stringent HWE threshold for controls, followed by a less stringent threshold for the case data.</span>
 <span id="cb6-16"><a href=""></a></span>
-<span id="cb6-17"><a href=""></a># This second HWE step only focusses on cases because in the controls all SNPs with a HWE p-value &lt; hwe 1e-6 were already removed</span>
+<span id="cb6-17"><a href=""></a>plink --bfile data/HapMap_3_r3_8 --hwe 1e-6 --make-bed --out data/HapMap_hwe_filter_step1</span>
 <span id="cb6-18"><a href=""></a></span>
-<span id="cb6-19"><a href=""></a>plink --bfile HapMap_hwe_filter_step1 --hwe 1e-10 --hwe-all --make-bed --out HapMap_3_r3_9</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-19"><a href=""></a># The HWE threshold for the cases filters out only SNPs which deviate extremely from HWE.</span>
+<span id="cb6-20"><a href=""></a></span>
+<span id="cb6-21"><a href=""></a># This second HWE step only focusses on cases because in the controls all SNPs with a HWE p-value &lt; hwe 1e-6 were already removed</span>
+<span id="cb6-22"><a href=""></a></span>
+<span id="cb6-23"><a href=""></a>plink --bfile data/HapMap_hwe_filter_step1 --hwe 1e-10 --hwe-all --make-bed --out data/HapMap_3_r3_9</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="visualisation-1" class="slide level2">
+<h2>Visualisation</h2>
+<table class="caption-top">
+<tbody>
+<tr class="odd">
+<td><img data-src="images/hist_hwe.png"></td>
+<td><img data-src="images/hwe_below.png"></td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="on-peut-combiner-les-commandes-pour-les-snp" class="slide level2">
 <h2>On peut combiner les commandes pour les SNP</h2>

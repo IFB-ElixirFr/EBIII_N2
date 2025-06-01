@@ -12,6 +12,20 @@ DNAseq/GWAS_tutorial/data/*.pgen
 DNAseq/GWAS_tutorial/data/*.pvar
 DNAseq/GWAS_tutorial/data/*.psam
 DNAseq/GWAS_tutorial/data/*.log
+DNAseq/GWAS_tutorial/data/*.genome
+DNAseq/GWAS_tutorial/data/*.hh
+DNAseq/GWAS_tutorial/data/*.imiss
+DNAseq/GWAS_tutorial/data/*.lmiss
+DNAseq/GWAS_tutorial/data/*_tmp
+DNAseq/GWAS_tutorial/data/*.txt
+DNAseq/GWAS_tutorial/data/*.nosex
+DNAseq/GWAS_tutorial/data/*.sexcheck
+DNAseq/GWAS_tutorial/data/*.cluster*
+DNAseq/GWAS_tutorial/data/*.mds
+DNAseq/GWAS_tutorial/data/*.map
+DNAseq/GWAS_tutorial/data/*.ped
+
+DNAseq/GWAS_tutorial/results/*
 
 DNAseq/GWAS_tutorial/GWAS_tutorial.Rproj
 DNAseq/GWAS_tutorial/.Rhistory
