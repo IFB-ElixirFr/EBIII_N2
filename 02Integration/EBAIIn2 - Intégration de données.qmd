@@ -7,9 +7,29 @@ format:
 editor: visual
 ---
 
+# Slide Early, Intermédiate, Late
+
+cantini et al.
+
+------------------------------------------------------------------------
+
+En quoi une méthode d'intégration multi-omique apporte une information différente d'une méthode "early" ou d'une méthode mono-omique voire d'une méthode "late" ?
+
+cantini et al.
+
+------------------------------------------------------------------------
+
 # Rappels sur les méthodes factorielles
 
-comment on les utilise en pratique. Répondre aux questions des méthodes factorielles : combien de composantes choisir ? Comment interpréter une carte des individus et un cercle de corrélation ?
+-   Exemple de l'ACP sur les données glioma data.
+
+-   comment on les utilise en pratique.
+
+-   Répondre aux questions des méthodes factorielles :
+
+    -   combien de composantes choisir ?
+
+    -   Comment interpréter une carte des individus et un cercle de corrélation ?
 
 ------------------------------------------------------------------------
 
@@ -25,7 +45,7 @@ comment on les utilise en pratique. Répondre aux questions des méthodes factor
 
 ## Les données omiques disponibles
 
-## ![](pHGG_omics.png)
+## ![](pHGG_omics.png){width="527"}
 
 ------------------------------------------------------------------------
 
@@ -35,7 +55,7 @@ comment on les utilise en pratique. Répondre aux questions des méthodes factor
 
 ## Questions
 
-### Emplacement de la tumeur (hémisphères, ligne médiane, tronc cérébral)
+### Emplacement de la tumeur
 
 -   Quels sont les gènes et les segments caractéristiques de chaque localisation, qui pourraient nous renseigner sur la cellule d'origine des tumeurs ?
 
@@ -44,12 +64,6 @@ comment on les utilise en pratique. Répondre aux questions des méthodes factor
 -   L'expression des gènes et les aberrations du nombre de copies ont-elles une influence sur la survie globale ? si oui, laquelle ?
 
 ### Améliorer la classification des gliomes malins pédiatriques, notamment son pouvoir pronostique.
-
-------------------------------------------------------------------------
-
-## Qu'est-ce qu'une méthode factorielle et surtout à quoi ça sert ?
-
-Lesquelles connaissez-vous ou avez-vous déjà utilisées ? UMAP, t-SNE, MDS, PCoA, ICA etc. Sondage (wooclap)
 
 ------------------------------------------------------------------------
 
@@ -107,7 +121,7 @@ Elles indiquent à quel point chaque variable contribue à un facteur : + la cha
 👉 En ACP, les charges sont les cosinus des angles entre les axes des variables et les composantes principales.
 
 ```{r, echo=TRUE}
-head(res.pca$rotation)
+head(res.pca$rotation, c(10, 5))
 ```
 
 ------------------------------------------------------------------------
@@ -137,7 +151,7 @@ head(res.pca$scale)
 la valeur des données rotatées : les données centrées (et éventuellement réduites) multipliées par la matrice de rotation.
 
 ```{r, echo=TRUE}
-head(res.pca$x, n = 6)
+head(res.pca$x, c(6, 7))
 ```
 
 ------------------------------------------------------------------------
@@ -160,7 +174,23 @@ loc <- factor(c("cort", "dipg", "midl")[ge_cgh_locIGR$ylabel])
 fviz_screeplot(res.pca)
 ```
 
-#### 
+------------------------------------------------------------------------
+
+## Variance expliquée cumulée
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+get_eigenvalue(res.pca) %>%
+  mutate(Dimension = factor(seq(1:n()), labels = sprintf("Dim. %i", 1:n()))) %>%
+  ggplot(aes(x = Dimension, y = cumulative.variance.percent)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = 80, color = "limegreen") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + 
+  labs(x = "", y = "Cumulative percentage of explained variance")
+
+```
 
 ------------------------------------------------------------------------
 
@@ -188,10 +218,6 @@ fviz_pca_var(res.pca.scale, select.var = list(contrib = 7), repel = TRUE)
 
 associer les graphes de l'ACP des données d'expression de gliomaData avec leur définition
 
-1.  Correspondances (wooclap)
+<https://app.wooclap.com/FMEBBT?from=status-bar>
 
-2.  Graphe des pourcentages de variance expliquée (pour sélectionner le nombre de composantes principales optimal)
-
-3.  Carte des individus (pour en déduire des clusters de patients)
-
-4.  Cercle des corrélations (pour en déduire le lien entre gènes et groupes de patients). Oh non, on ne voit rien !!
+------------------------------------------------------------------------
