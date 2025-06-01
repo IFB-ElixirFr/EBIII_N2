@@ -11,10 +11,8 @@ editor: visual
 
 ## Qui suis-je ?
 
-::::: columns
-::: {.column width="50%"}
-![](GWASoise.png)
-:::
+:::: columns
+![](images/GWASoise.png)
 
 ::: {.column width="50%"}
 **Nom :** Cathy PHILIPPE
@@ -25,7 +23,7 @@ editor: visual
 
 **Logiciels :** PLINK, R,
 :::
-:::::
+::::
 
 ------------------------------------------------------------------------
 
@@ -57,7 +55,11 @@ utiliser ces connaissances pour concevoir une stratégie d’analyse efficace da
 
 -   Production et interprétation des graphes
 
-Le cours sera basé sur les GWAS chez l’Homme, il est inspiré et adapté du cours de Matti Pirinen, Université d'Helsinki : <https://www.mv.helsinki.fi/home/mjxpirin/GWAS_course/>
+Le cours sera basé sur les GWAS chez l’Homme, il est inspiré et adapté :
+
+-   du cours de Matti Pirinen, Université d'Helsinki : <https://www.mv.helsinki.fi/home/mjxpirin/GWAS_course/> et de
+
+-   l'article Marees et al. Int J Methods Psychiatr Res. 2018 <https://doi.org/10.1002/mpr.1608>
 
 ------------------------------------------------------------------------
 
@@ -83,7 +85,7 @@ Quels peuvent être les objectifs dans d'autres domaines que la génétique huma
 
 ## Les différents types de variants génétiques
 
-![Cardoso et al. 2015 Front. Bioeng. Biotechnol., 16 February 2015 \| https://doi.org/10.3389/fbioe.2015.00013](genetic_variations.jpg){width="695"}
+![Cardoso et al. 2015 Front. Bioeng. Biotechnol., 16 February 2015 \| https://doi.org/10.3389/fbioe.2015.00013](images/genetic_variations.jpg)
 
 ------------------------------------------------------------------------
 
@@ -93,13 +95,13 @@ Quels peuvent être les objectifs dans d'autres domaines que la génétique huma
 ::: {.column width="50%"}
 Genome dans la population
 
-![SNP, allèle majeur G, allèle mineur T, MAF = 4%](SNP.png){width="560"}
+![SNP, allèle majeur G, allèle mineur T, MAF = 4%](images/SNP.png)
 :::
 
 ::: {.column width="50%"}
 Génotypes à ce locus
 
-![Sous équilibre de Hardy-Weinberg](genotypes.png){width="427"}
+![Sous équilibre de Hardy-Weinberg](images/genotypes.png)
 :::
 :::::
 
@@ -161,17 +163,17 @@ On appelle pop° de Hardy-Weinberg, une pop° idéale s'accouplant au hasard san
 
 Supposons qu'à ce locus, les deux allèles d'un individu sont échantillonnés au hasard dans une pop° HW, alors les fréquences relatives des génotypes suivent la distribution binomiale $Bin(2,f)$ :
 
-+--------------------------------+-----------------------------------+
-| Génotypes                      | Fréquences attendues              |
-|                                |                                   |
-|                                | d'après la loi $Bin(2,f)$         |
-+:==============================:+:=================================:+
-| 0                              | $(1-f)²$                          |
-+--------------------------------+-----------------------------------+
-| 1                              | $2f(1-f)$                         |
-+--------------------------------+-----------------------------------+
-| 2                              | $f²$                              |
-+--------------------------------+-----------------------------------+
++-----------+---------------------------+
+| Génotypes | Fréquences attendues      |
+|           |                           |
+|           | d'après la loi $Bin(2,f)$ |
++:=========:+:=========================:+
+| 0         | $(1-f)²$                  |
++-----------+---------------------------+
+| 1         | $2f(1-f)$                 |
++-----------+---------------------------+
+| 2         | $f²$                      |
++-----------+---------------------------+
 
 ------------------------------------------------------------------------
 
@@ -217,29 +219,77 @@ Exclusions des variants qui ne suivent pas les fréquences HWE lors du contrôle
 
 ------------------------------------------------------------------------
 
+## Le contrôle qualité sur les individus
+
+1.  **Incohérences entre le sexe déclaré et le sexe génétique**
+
+2.  **Taux d'hétérozygotie trop élevé**
+
+3.  **Individus avec liens de parenté cryptique**
+
+4.  **Individus trop éloignés génétiquement de la pop° étudiée**
+
+------------------------------------------------------------------------
+
+## Formats de fichiers PLINK
+
+| format de fichier | contenu                        |
+|-------------------|--------------------------------|
+| my_data.bed       | Génotypes codés en binaire     |
+| my_data.bim       | Informations sur les variants  |
+| my_data.fam       | Informations sur les individus |
+
+------------------------------------------------------------------------
+
+## Contenu du fichier .bim
+
+| Chr | ID SNP (RSID) | POS génétique | POS physique | Allèle 1 (svt maj) | Allèle 2 (svt min) |
+|----|----|----|----|----|----|
+| 1 | rs2185539 | 0 | 556738 | T | C |
+| 2 | rs11510103 | 0 | 557616 | G | A |
+| X | rs11240767 | 0 | 718814 | T | C |
+
+------------------------------------------------------------------------
+
+## Contenu du fichier .fam
+
+| FID  | IID    | PID    | MID    | Sexe | Phénotype |
+|------|--------|--------|--------|------|-----------|
+| FAM1 | IND001 | 0      | 0      | 1    | -9        |
+| FAM1 | IND002 | 0      | 0      | 2    | 2         |
+| FAM1 | IND003 | IND001 | IND002 | 2    | 1         |
+
+------------------------------------------------------------------------
+
 ## Données manquantes par SNP et par individu
 
-```{bash}
+```         
 #| label: plink missing
 #| eval: false
 #| echo: true
 
-plink --bfile HapMap_3_r3_1 --missing
+plink --bfile data/HapMap_3_r3_1 --missing --out data/plink
 ```
 
-Sortie : plink.imiss and plink.lmiss, ces fichiers indiquent respectivement la proportion de SNP manquants par individu et la proportion d'individus manquants par SNP.
+Sortie : plink.imiss and plink.lmiss, ces fichiers indiquent respectivement la proportion de SNP manquants par individu et la proportion d’individus manquants par SNP.
 
 ------------------------------------------------------------------------
 
 ## Visualiser les résultats
 
-```{bash}
+```         
 #| label: R hist missing
 #| eval: false
 #| echo: true
 
-Rscript --no-save hist_miss.R
+Rscript --no-save scripts/hist_miss.R
 ```
+
+------------------------------------------------------------------------
+
+| plink.imiss           | plink.lmiss           |
+|-----------------------|-----------------------|
+| ![](images/imiss.png) | ![](images/lmiss.png) |
 
 ------------------------------------------------------------------------
 
@@ -254,21 +304,17 @@ Supprimer les SNP et les individus avec des niveaux élevés de données manquan
 
 # Filtrer les loci où plus de 5\% des individus ont des données manquantes.
 
-plink --bfile HapMap_3_r3_1 --geno 0.2 # Delete SNPs with missingness >0.2 
-                            --mind 0.2 # Delete individuals with missingness >0.2.
-                            --make-bed --out HapMap_3_r3_2
-                            
-# Delete individuals with missingness >0.2.
+plink --bfile data/HapMap_3_r3_1 --geno 0.2 --mind 0.2 --make-bed --out data/HapMap_3_r3_2
+# --geno 0.2 = Delete SNPs with missingness >0.2 
+# --mind 0.2 = Delete individuals with missingness >0.2.
 
-plink --bfile HapMap_3_r3_2 --make-bed --out HapMap_3_r3_3
+plink --bfile data/HapMap_3_r3_2 --make-bed --out data/HapMap_3_r3_3
 
 # Delete SNPs with missingness >0.02.
-
-plink --bfile HapMap_3_r3_3 --geno 0.02 --make-bed --out HapMap_3_r3_4
+plink --bfile data/HapMap_3_r3_3 --geno 0.02 --make-bed --out data/HapMap_3_r3_4
 
 # Delete individuals with missingness >0.02.
-
-plink --bfile HapMap_3_r3_4 --mind 0.02 --make-bed --out HapMap_3_r3_5
+plink --bfile data/HapMap_3_r3_4 --mind 0.02 --make-bed --out data/HapMap_3_r3_5
 ```
 
 ------------------------------------------------------------------------
@@ -315,15 +361,11 @@ $F=\frac{H_{exp} - H_{obs}}{H_{exp}}$​​
 
 ## Interprétation de stat F
 
-+------------------+--------------------------------------+-----------------------+
-| Valeur de F      | Interprétation probable              | Sexe génétique        |
-+:================:+:====================================:+:=====================:+
-| \~1.0            | Homozygote complet sur X → **Homme** | 1 (Male)              |
-+------------------+--------------------------------------+-----------------------+
-| \~0.0            | Hétérozygotie normale → **Femme**    | 2 (Female)            |
-+------------------+--------------------------------------+-----------------------+
-| Entre 0.2 et 0.8 | Ambigü ou problème                   | Indéterminé ou erreur |
-+------------------+--------------------------------------+-----------------------+
+| Valeur de F | Interprétation probable | Sexe génétique |
+|:--:|:--:|:--:|
+| \~1.0 | Homozygote complet sur X → **Homme** | 1 (Male) |
+| \~0.0 | Hétérozygotie normale → **Femme** | 2 (Female) |
+| Entre 0.2 et 0.8 | Ambigü ou problème | Indéterminé ou erreur |
 
 ------------------------------------------------------------------------
 
@@ -334,24 +376,32 @@ $F=\frac{H_{exp} - H_{obs}}{H_{exp}}$​​
 #| eval: false
 #| echo: true
 
-plink --bfile HapMap_3_r3_5 --check-sex
+plink --bfile data/HapMap_3_r3_5 --check-sex --out results/plink
 
 # Generate plots to visualize the sex-check results.
 
-Rscript --no-save gender_check.R # These checks indicate that there is one woman with a sex discrepancy, F value of 0.99. (When using other datasets often a few discrepancies will be found).
+Rscript --no-save scripts/gender_check.R # These checks indicate that there is one woman with a sex discrepancy, F value of 0.99. (When using other datasets often a few discrepancies will be found).
 
 # 1) Delete individuals with sex discrepancy.
 # This command generates a list of individuals with the status PROBLEM. 
-grep "PROBLEM" plink.sexcheck| awk '{print$1,$2}'> sex_discrepancy.txt 
+grep "PROBLEM" results/plink.sexcheck| awk '{print$1,$2}'> results/sex_discrepancy.txt 
 
 # This command removes the list of individuals with the status PROBLEM.
-plink --bfile HapMap_3_r3_5 --remove sex_discrepancy.txt --make-bed --out HapMap_3_r3_6 
+plink --bfile data/HapMap_3_r3_5 --remove results/sex_discrepancy.txt --make-bed --out data/HapMap_3_r3_6 
 
 # 2) impute-sex.
 # This imputes the sex based on the genotype information into your data set.
-plink --bfile HapMap_3_r3_5 --impute-sex --make-bed --out HapMap_3_r3_6 
+plink --bfile data/HapMap_3_r3_5 --impute-sex --make-bed --out data/HapMap_3_r3_6 
 
 ```
+
+------------------------------------------------------------------------
+
+## Visualisation
+
+| Gender distribution    | Women distribution    | Men distribution    |
+|------------------------|-----------------------|---------------------|
+| ![](images/gender.png) | ![](images/women.png) | ![](images/men.png) |
 
 ------------------------------------------------------------------------
 
@@ -363,17 +413,26 @@ plink --bfile HapMap_3_r3_5 --impute-sex --make-bed --out HapMap_3_r3_6
 #| echo: true
 
 # Select autosomal SNPs only (i.e., from chromosomes 1 to 22).
+awk '{ if ($1 >= 1 && $1 <= 22) print $2 }' data/HapMap_3_r3_6.bim > results/snp_1_22.txt 
 
-awk '{ if ($1 >= 1 && $1 <= 22) print $2 }' HapMap_3_r3_6.bim > snp_1_22.txt plink --bfile HapMap_3_r3_6 --extract snp_1_22.txt --make-bed --out HapMap_3_r3_7
+plink --bfile data/HapMap_3_r3_6 --extract results/snp_1_22.txt --make-bed --out data/HapMap_3_r3_7
 
 # Generate a plot of the MAF distribution.
+plink --bfile data/HapMap_3_r3_7 --freq --out results/MAF_check 
 
-plink --bfile HapMap_3_r3_7 --freq --out MAF_check Rscript --no-save MAF_check.R
+Rscript --no-save scripts/MAF_check.R
 
 # Remove SNPs with a low MAF frequency.
-
-plink --bfile HapMap_3_r3_7 --maf 0.05 --make-bed --out HapMap_3_r3_8 # 1073226 SNPs are left # A conventional MAF threshold for a regular GWAS is between 0.01 or 0.05, depending on sample size.
+plink --bfile data/HapMap_3_r3_7 --maf 0.05 --make-bed --out data/HapMap_3_r3_8 
+# 1073226 SNPs are left 
+# A conventional MAF threshold for a regular GWAS is between 0.01 or 0.05, depending on sample size.
 ```
+
+------------------------------------------------------------------------
+
+## Visualisation de distribution de la MAF
+
+![](images/maf_distrib.png)
 
 ------------------------------------------------------------------------
 
@@ -381,7 +440,11 @@ plink --bfile HapMap_3_r3_7 --maf 0.05 --make-bed --out HapMap_3_r3_8 # 1073226 
 
 Test du $\chi²$ à 1 df où les comptages attendus sont calculés en supposant HWE compte tenu des fréquences des allèles.
 
-$N$ individus d'une pop°, $n_0$, $n_1$, $n_2$ génotypes observés pour les génotypes 0, 1 et 2, respectivement, avec $N=n_0+n_1+n_2$.
+-   $N$ individus d'une pop°,
+
+-   $n_0$, $n_1$, $n_2$ observés pour les génotypes 0, 1 et 2, respectivement,
+
+-   avec $N=n_0+n_1+n_2$.
 
 +:--------------------------------------:+:--------------------------------:+
 | **estimation de** $f$ **dans la pop°** | comptages attendus des génotypes |
@@ -414,20 +477,32 @@ Pour un échantillon de petite taille ou des variants très rares, une distribut
 
 Check the distribution of HWE p-values of all SNPs.
 
-plink --bfile HapMap_3_r3_8 --hardy # Selecting SNPs with HWE p-value below 0.00001, required for one of the two plot generated by the next Rscript, allows to zoom in on strongly deviating SNPs. awk '{ if ($9 <0.00001) print $0 }' plink.hwe>plinkzoomhwe.hwe Rscript --no-save hwe.R
+plink --bfile data/HapMap_3_r3_8 --hardy --out results/plink # Selecting SNPs with HWE p-value below 0.00001, required for one of the two plot generated by the next Rscript, allows to zoom in on strongly deviating SNPs. 
+
+awk '{ if ($9 <0.00001) print $0 }' results/plink.hwe > results/plinkzoomhwe.hwe 
+
+Rscript --no-save scripts/hwe.R
 
 # By default the --hwe option in plink only filters for controls.
 
 # Therefore, we use two steps, first we use a stringent HWE threshold for controls, followed by a less stringent threshold for the case data.
 
-plink --bfile HapMap_3_r3_8 --hwe 1e-6 --make-bed --out HapMap_hwe_filter_step1
+plink --bfile data/HapMap_3_r3_8 --hwe 1e-6 --make-bed --out data/HapMap_hwe_filter_step1
 
 # The HWE threshold for the cases filters out only SNPs which deviate extremely from HWE.
 
 # This second HWE step only focusses on cases because in the controls all SNPs with a HWE p-value < hwe 1e-6 were already removed
 
-plink --bfile HapMap_hwe_filter_step1 --hwe 1e-10 --hwe-all --make-bed --out HapMap_3_r3_9
+plink --bfile data/HapMap_hwe_filter_step1 --hwe 1e-10 --hwe-all --make-bed --out data/HapMap_3_r3_9
 ```
+
+------------------------------------------------------------------------
+
+## Visualisation
+
+|                          |                           |
+|--------------------------|---------------------------|
+| ![](images/hist_hwe.png) | ![](images/hwe_below.png) |
 
 ------------------------------------------------------------------------
 
@@ -446,53 +521,83 @@ plink2 --bfile my_data --geno 0.05 --maf
 
 ------------------------------------------------------------------------
 
-## Taux d'Hétérozygosité trop élevé
+## Taux d'Hétérozygotie trop élevé
 
-Les vérifications de l'hétérozygotie sont effectuées sur un ensemble de SNP qui ne sont pas fortement corrélés.
+Les vérifications de l'hétérozygotie sont effectuées sur un ensemble de SNP indépendants, donc non fortement corrélés.
 
-Par conséquent, pour générer une liste de SNP non (fortement) corrélés, nous excluons les régions à forte inversion (inversion.txt \[High LD regions\]) et élaguons les SNP à l'aide de la commande --indep-pairwise.
+Par conséquent, pour générer une liste de SNP non (fortement) corrélés, nous excluons les régions à forte inversion (`inversion.txt` \[High LD regions\]) et élaguons les SNP à l'aide de la commande --indep-pairwise.
 
-Les paramètres 50 5 0.2 représentent respectivement : la taille de la fenêtre, le nombre de SNP pour déplacer la fenêtre à chaque étape, et le coefficient de corrélation multiple pour un SNP "régressé" sur tous les autres SNP simultanément.
+------------------------------------------------------------------------
+
+## Créer un set de SNP indépendants avec PLINK
+
+```{bash}
+#| label: plink combi snp
+#| eval: false
+#| echo: true
+
+plink --bfile input \
+      --indep-pairwise <window_size> <step_size> <r²_threshold> \
+      --out output_prefix
+
+```
+
+| Paramètre | Description |
+|----|----|
+| `<window_size>` | Taille de la fenêtre glissante (en nombre de SNPs) |
+| `<step_size>` | Pas de glissement de la fenêtre (en nombre de SNPs) |
+| `<r²_threshold>` | Seuil de corrélation LD au-dessus duquel un SNP est exclu |
+
+------------------------------------------------------------------------
+
+## Application sur les données HapMap
 
 ```{bash}
 
-plink --bfile HapMap_3_r3_9 --exclude inversion.txt --range --indep-pairwise 50 5 0.2 --out indepSNP # Note, don't delete the file indepSNP.prune.in, we will use this file in later steps of the tutorial.
+plink --bfile data/HapMap_3_r3_9 --exclude data/inversion.txt --range --indep-pairwise 50 5 0.2 --out results/indepSNP # Note, don't delete the file indepSNP.prune.in, we will use this file in later steps of the tutorial.
 
-plink --bfile HapMap_3_r3_9 --extract indepSNP.prune.in --het --out R_check # This file contains your pruned data set.
+plink --bfile data/HapMap_3_r3_9 --extract results/indepSNP.prune.in --het --out results/R_check # This file contains your pruned data set.
 ```
 
 ------------------------------------------------------------------------
+
+## Distribution du taux d'hétérozygotie
 
 ```{bash}
 
 
 # Plot of the heterozygosity rate distribution
 
-Rscript --no-save check_heterozygosity_rate.R
+Rscript --no-save scripts/check_heterozygosity_rate.R
 
 # The following code generates a list of individuals who deviate more than 3 standard deviations from the heterozygosity rate mean.
 
 # For data manipulation we recommend using UNIX. However, when performing statistical calculations R might be more convenient, hence the use of the Rscript for this step:
 
-Rscript --no-save heterozygosity_outliers_list.R
+Rscript --no-save scripts/heterozygosity_outliers_list.R
 
 # Output of the command above: fail-het-qc.txt .
 ```
 
 ------------------------------------------------------------------------
 
+![](images/heterozygosity.png)
+
+------------------------------------------------------------------------
+
+## Deux individus à retirer
+
 ```{bash}
 
+# Ici, deux individus ont un taux d'hétérozygotie s'écartant de plus de 3 SD de la moyenne
 
-# When using our example data/the HapMap data this list contains 2 individuals (i.e., two individuals have a heterozygosity rate deviating more than 3 SD's from the mean).
+# Adapter ce fichier pour le rendre compatible avec PLINK, en supprimant tous les guillemets du fichier et en ne sélectionnant que les deux premières colonnes.
 
-# Adapt this file to make it compatible for PLINK, by removing all quotation marks from the file and selecting only the first two columns.
-
-sed 's/"// g' fail-het-qc.txt | awk '{print$1, $2}'> het_fail_ind.txt
+sed 's/"// g' results/fail-het-qc.txt | awk '{print$1, $2}'> results/het_fail_ind.txt
 
 # Remove heterozygosity rate outliers.
 
-plink --bfile HapMap_3_r3_9 --remove het_fail_ind.txt --make-bed --out HapMap_3_r3_10
+plink --bfile data/HapMap_3_r3_9 --remove results/het_fail_ind.txt --make-bed --out data/HapMap_3_r3_10
 ```
 
 ------------------------------------------------------------------------
@@ -592,20 +697,28 @@ $\text{PI_HAT} = Z1 \times 0.5 + Z2 \times 1.0$
 #| echo: true
 
 # vérification des liens de parentés pour les individus avec un pi_hat > 0.2
-plink --bfile HapMap_3_r3_10 --extract indepSNP.prune.in --genome --min 0.2 --out pihat_min0.2
+plink --bfile data/HapMap_3_r3_10 --extract results/indepSNP.prune.in --genome --min 0.2 --out results/pihat_min0.2
 
 # La cohorte HapMap contient des individus avec des liens parent-enfant. 
 # Cette commande permet de les visualiser : 
-awk '{ if ($8 >0.9) print $0 }' pihat_min0.2.genome > zoom_pihat.genome
+awk '{ if ($8 >0.9) print $0 }' results/pihat_min0.2.genome > results/zoom_pihat.genome
 
 # On génère un graphe pour visualiser le type de lien.
-Rscript --no-save Relatedness.R
+Rscript --no-save scripts/Relatedness.R
 
 # Nous n'incluons que les fondateurs (individus sans parents dans l'ensemble de données).
 
-plink --bfile HapMap_3_r3_10 --filter-founders --make-bed --out HapMap_3_r3_11
+plink --bfile data/HapMap_3_r3_10 --filter-founders --make-bed --out data/HapMap_3_r3_11
 
 ```
+
+------------------------------------------------------------------------
+
+## Visualisation des liens de parenté
+
+| Unrelated                   | Zoom in on Parent-Offspring relationship |
+|-----------------------------|------------------------------------------|
+| ![](images/relatedness.png) | ![](images/zoom_relatedness.png)         |
 
 ------------------------------------------------------------------------
 
@@ -627,7 +740,7 @@ Cela génère un fichier `.genome` contenant pour chaque paire :
 #| echo: true
 
 # On vérifie les leins de parenté parmi les fondateurs
-plink --bfile HapMap_3_r3_11 --extract indepSNP.prune.in --genome --min 0.2 --out pihat_min0.2_in_founders
+plink --bfile data/HapMap_3_r3_11 --extract results/indepSNP.prune.in --genome --min 0.2 --out results/pihat_min0.2_in_founders
 ```
 
 Le fichier 'pihat_min0.2_in_founders.genome' qu'il reste une paire d'individus avec un pi_hat \> 0.2 parmi les fondateurs.
@@ -643,15 +756,17 @@ Pour chaque paire d'individus apparentés (pi_hat \> 0.2), il est recommandé de
 #| eval: false
 #| echo: true
 
-plink --bfile HapMap_3_r3_11 --missing # Use an UNIX text editor (e.g., vi(m) ) to check which individual has the highest call rate in the 'related pair'.
+plink --bfile data/HapMap_3_r3_11 --missing --out results/plink # Use an UNIX text editor (e.g., vi(m) ) to check which individual has the highest call rate in the 'related pair'.
 
 ```
 
 ------------------------------------------------------------------------
 
-On utilise un éditeur de texte de type vi ou un script R pour écrire dans un fihcier les FID et IID des participants à écarter. Par exemple :
+## A exécuter dans un terminal
 
-Ici, l'individu 13291 NA07045 a le taux de calling le plus bas.
+On utilise un éditeur de texte de type `vi` ou un script `R` pour écrire dans un fihcier les FID et IID des participants à écarter. Par exemple :
+
+Ici, l'individu `13291 NA07045` a le taux de calling le plus bas.
 
 ```{bash}
 #| label: vi
@@ -659,7 +774,7 @@ Ici, l'individu 13291 NA07045 a le taux de calling le plus bas.
 #| echo: true
 
 # vi crée un fichier nommé 0.2_low_call_rate_pihat.txt et l'ouvre
-vi 0.2_low_call_rate_pihat.txt 
+vi results/0.2_low_call_rate_pihat.txt 
 i # Insertion
 13291 NA07045 # Press esc on keyboard! 
 :x # Press enter on keyboard 
@@ -667,14 +782,16 @@ i # Insertion
 
 ------------------------------------------------------------------------
 
-On retire les individus dont les identifiants se trouvent dnas le fichier 0.2_low_call_rate_pihat.txt
+## Retirer les individus apparentés
+
+dont les identifiants se trouvent dans le fichier 0.2_low_call_rate_pihat.txt
 
 ```{bash}
 #| label: remove
 #| eval: false
 #| echo: true
 
-plink --bfile HapMap_3_r3_11 --remove 0.2_low_call_rate_pihat.txt --make-bed --out HapMap_3_r3_12
+plink --bfile data/HapMap_3_r3_11 --remove results/0.2_low_call_rate_pihat.txt --make-bed --out data/HapMap_3_r3_12
 
 ```
 
@@ -682,7 +799,7 @@ plink --bfile HapMap_3_r3_11 --remove 0.2_low_call_rate_pihat.txt --make-bed --o
 
 ## Les structures cryptiques de population
 
-Plusieurs méthodes d'estimation de la parenté examinées précedemment reposent sur l'hypothèse d'une population **homogène, sans structure génétique.**
+Une population dite de Hardy-Weinberg repose entre autre sur l'hypothèse d'une population **homogène, sans structure génétique.**
 
 Une structure génétique de population est présente dans l'échantillon si celui-ci peut être divisé en groupes de telle sorte que les individus d'un groupe sont, en moyenne, plus semblables génétiquement entre eux qu'avec les individus des autres groupes. Les populations éloignées géographiquement forment des sous-populations homogènes.
 
@@ -690,15 +807,21 @@ Réaliser une GWAS suppose que la population étudiée est **homogène.**
 
 ------------------------------------------------------------------------
 
-## MultiDimensional Scaling (MDS) et graphe de stratification de population
+------------------------------------------------------------------------
+
+## MultiDimensional Scaling (MDS) et ancrage
 
 ```{bash}
 #| label: MDS
 #| eval: false
 #| echo: true
 
-Rscript MDS_merged.R 
+Rscript scripts/MDS_merged.R 
 ```
+
+![](images/MDS.png)
+
+------------------------------------------------------------------------
 
 Le fichier de sortie MDS.pdf montre que nos propres données font partie du groupe européen des données de 1000 génomes. Il n'est donc pas nécessaire de supprimer des sujets.
 
