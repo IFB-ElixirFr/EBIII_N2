@@ -11,6 +11,7 @@ DNAseq/GWAS_tutorial/data/*.fam
 DNAseq/GWAS_tutorial/data/*.pgen
 DNAseq/GWAS_tutorial/data/*.pvar
 DNAseq/GWAS_tutorial/data/*.psam
+DNAseq/GWAS_tutorial/data/*.log
 
 DNAseq/GWAS_tutorial/GWAS_tutorial.Rproj
 DNAseq/GWAS_tutorial/.Rhistory
