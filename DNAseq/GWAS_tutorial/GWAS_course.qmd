@@ -2,7 +2,7 @@
 title: "Comment faire une étude d'association pangénomique ?"
 author: Cathy PHILIPPE
 format: 
-  revealjs:
+  revealjs: 
     theme: simple
 editor: visual
 ---
@@ -11,8 +11,8 @@ editor: visual
 
 ## Qui suis-je ?
 
-:::: columns
-![](images/GWASoise.png)
+::: columns
+![](images/GWASoise.png){width="50%," heigth="50%"}
 
 ::: {.column width="50%"}
 **Nom :** Cathy PHILIPPE
@@ -23,15 +23,15 @@ editor: visual
 
 **Logiciels :** PLINK, R,
 :::
-::::
+:::
 
 ------------------------------------------------------------------------
 
 ## Objectifs pédagogiques
 
-comprendre les enjeux méthodologiques et pratiques de l’étude d’association pangénomique
+comprendre les enjeux méthodologiques et pratiques de l'étude d'association pangénomique
 
-utiliser ces connaissances pour concevoir une stratégie d’analyse efficace dans leurs propres projets de recherche.
+utiliser ces connaissances pour concevoir une stratégie d'analyse efficace dans leurs propres projets de recherche.
 
 ------------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ utiliser ces connaissances pour concevoir une stratégie d’analyse efficace da
 
 -   Production et interprétation des graphes
 
-Le cours sera basé sur les GWAS chez l’Homme, il est inspiré et adapté :
+Le cours sera basé sur les GWAS chez l'Homme, il est inspiré et adapté :
 
 -   du cours de Matti Pirinen, Université d'Helsinki : <https://www.mv.helsinki.fi/home/mjxpirin/GWAS_course/> et de
 
@@ -91,7 +91,7 @@ Quels peuvent être les objectifs dans d'autres domaines que la génétique huma
 
 ## Single Nucleotide Polymorphisms
 
-::::: columns
+::: columns
 ::: {.column width="50%"}
 Genome dans la population
 
@@ -103,7 +103,7 @@ Génotypes à ce locus
 
 ![Sous équilibre de Hardy-Weinberg](images/genotypes.png)
 :::
-:::::
+:::
 
 ------------------------------------------------------------------------
 
@@ -233,6 +233,14 @@ Exclusions des variants qui ne suivent pas les fréquences HWE lors du contrôle
 
 ## Formats de fichiers PLINK
 
+![](images/plink_data_format.jpg)
+
+Marees et al. (2018)
+
+------------------------------------------------------------------------
+
+## Formats de fichiers PLINK
+
 | format de fichier | contenu                        |
 |-------------------|--------------------------------|
 | my_data.bed       | Génotypes codés en binaire     |
@@ -244,10 +252,10 @@ Exclusions des variants qui ne suivent pas les fréquences HWE lors du contrôle
 ## Contenu du fichier .bim
 
 | Chr | ID SNP (RSID) | POS génétique | POS physique | Allèle 1 (svt maj) | Allèle 2 (svt min) |
-|----|----|----|----|----|----|
-| 1 | rs2185539 | 0 | 556738 | T | C |
-| 2 | rs11510103 | 0 | 557616 | G | A |
-| X | rs11240767 | 0 | 718814 | T | C |
+|-----|---------------|---------------|--------------|--------------------|--------------------|
+| 1   | rs2185539     | 0             | 556738       | T                  | C                  |
+| 2   | rs11510103    | 0             | 557616       | G                  | A                  |
+| X   | rs11240767    | 0             | 718814       | T                  | C                  |
 
 ------------------------------------------------------------------------
 
@@ -263,21 +271,23 @@ Exclusions des variants qui ne suivent pas les fréquences HWE lors du contrôle
 
 ## Données manquantes par SNP et par individu
 
-```         
+``` bash
+{bash}
 #| label: plink missing
-#| eval: false
+#| eval: true
 #| echo: true
 
-plink --bfile data/HapMap_3_r3_1 --missing --out data/plink
+module load plink
+plink --bfile data/HapMap_3_r3_1 --missing --out results/plink
 ```
 
-Sortie : plink.imiss and plink.lmiss, ces fichiers indiquent respectivement la proportion de SNP manquants par individu et la proportion d’individus manquants par SNP.
+Sortie : plink.imiss and plink.lmiss, ces fichiers indiquent respectivement la proportion de SNP manquants par individu et la proportion d'individus manquants par SNP.
 
 ------------------------------------------------------------------------
 
 ## Visualiser les résultats
 
-```         
+``` bash
 #| label: R hist missing
 #| eval: false
 #| echo: true
@@ -302,19 +312,21 @@ Supprimer les SNP et les individus avec des niveaux élevés de données manquan
 #| eval: false
 #| echo: true
 
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
 # Filtrer les loci où plus de 5\% des individus ont des données manquantes.
 
-plink --bfile data/HapMap_3_r3_1 --geno 0.2 --mind 0.2 --make-bed --out data/HapMap_3_r3_2
+plink --bfile data/HapMap_3_r3_1 --geno 0.2 --mind 0.2 --make-bed --out results/HapMap_3_r3_2
 # --geno 0.2 = Delete SNPs with missingness >0.2 
 # --mind 0.2 = Delete individuals with missingness >0.2.
 
-plink --bfile data/HapMap_3_r3_2 --make-bed --out data/HapMap_3_r3_3
+plink --bfile results/HapMap_3_r3_2 --make-bed --out results/HapMap_3_r3_3
 
 # Delete SNPs with missingness >0.02.
-plink --bfile data/HapMap_3_r3_3 --geno 0.02 --make-bed --out data/HapMap_3_r3_4
+plink --bfile results/HapMap_3_r3_3 --geno 0.02 --make-bed --out results/HapMap_3_r3_4
 
 # Delete individuals with missingness >0.02.
-plink --bfile data/HapMap_3_r3_4 --mind 0.02 --make-bed --out data/HapMap_3_r3_5
+plink --bfile results/HapMap_3_r3_4 --mind 0.02 --make-bed --out results/HapMap_3_r3_5
 ```
 
 ------------------------------------------------------------------------
@@ -325,9 +337,9 @@ Le flag `--check-sex` de PLINK (notamment PLINK v1.9, mais aussi disponible dans
 
 `--check-sex` évalue le **rapport d'hétérozygotie sur le chromosome X** pour chaque individu.
 
--   **Hommes (XY)** devraient avoir peu ou pas d’hétérozygotie sur X.
+-   **Hommes (XY)** devraient avoir peu ou pas d'hétérozygotie sur X.
 
--   **Femmes (XX)** devraient avoir des niveaux normaux d’hétérozygotie.
+-   **Femmes (XX)** devraient avoir des niveaux normaux d'hétérozygotie.
 
 ------------------------------------------------------------------------
 
@@ -343,7 +355,7 @@ Fichier .sexcheck contenant les colonnes suivantes :
 
 -   STATUS : OK ou PROBLEM
 
--   F : coefficient d’homozygotie sur le chromosome X.
+-   F : coefficient d'homozygotie sur le chromosome X.
 
 ------------------------------------------------------------------------
 
@@ -355,17 +367,17 @@ $F=\frac{H_{exp} - H_{obs}}{H_{exp}}$​​
 
 -   $H_{obs}$​ : proportion d'hétérozygotes observés
 
--   $H_{exp}​$ : proportion d’hétérozygotes attendus sous HW
+-   $H_{exp}​$ : proportion d'hétérozygotes attendus sous HW
 
 ------------------------------------------------------------------------
 
 ## Interprétation de stat F
 
-| Valeur de F | Interprétation probable | Sexe génétique |
-|:--:|:--:|:--:|
-| \~1.0 | Homozygote complet sur X → **Homme** | 1 (Male) |
-| \~0.0 | Hétérozygotie normale → **Femme** | 2 (Female) |
-| Entre 0.2 et 0.8 | Ambigü ou problème | Indéterminé ou erreur |
+|   Valeur de F    |       Interprétation probable        |    Sexe génétique     |
+|:----------------:|:------------------------------------:|:---------------------:|
+|      \~1.0       | Homozygote complet sur X → **Homme** |       1 (Male)        |
+|      \~0.0       |  Hétérozygotie normale → **Femme**   |      2 (Female)       |
+| Entre 0.2 et 0.8 |          Ambigü ou problème          | Indéterminé ou erreur |
 
 ------------------------------------------------------------------------
 
@@ -376,7 +388,9 @@ $F=\frac{H_{exp} - H_{obs}}{H_{exp}}$​​
 #| eval: false
 #| echo: true
 
-plink --bfile data/HapMap_3_r3_5 --check-sex --out results/plink
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile results/HapMap_3_r3_5 --check-sex --out results/plink
 
 # Generate plots to visualize the sex-check results.
 
@@ -387,11 +401,11 @@ Rscript --no-save scripts/gender_check.R # These checks indicate that there is o
 grep "PROBLEM" results/plink.sexcheck| awk '{print$1,$2}'> results/sex_discrepancy.txt 
 
 # This command removes the list of individuals with the status PROBLEM.
-plink --bfile data/HapMap_3_r3_5 --remove results/sex_discrepancy.txt --make-bed --out data/HapMap_3_r3_6 
+plink --bfile results/HapMap_3_r3_5 --remove results/sex_discrepancy.txt --make-bed --out results/HapMap_3_r3_6 
 
 # 2) impute-sex.
 # This imputes the sex based on the genotype information into your data set.
-plink --bfile data/HapMap_3_r3_5 --impute-sex --make-bed --out data/HapMap_3_r3_6 
+plink --bfile results/HapMap_3_r3_5 --impute-sex --make-bed --out results/HapMap_3_r3_6 
 
 ```
 
@@ -412,18 +426,20 @@ plink --bfile data/HapMap_3_r3_5 --impute-sex --make-bed --out data/HapMap_3_r3_
 #| eval: false
 #| echo: true
 
-# Select autosomal SNPs only (i.e., from chromosomes 1 to 22).
-awk '{ if ($1 >= 1 && $1 <= 22) print $2 }' data/HapMap_3_r3_6.bim > results/snp_1_22.txt 
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
 
-plink --bfile data/HapMap_3_r3_6 --extract results/snp_1_22.txt --make-bed --out data/HapMap_3_r3_7
+# Select autosomal SNPs only (i.e., from chromosomes 1 to 22).
+awk '{ if ($1 >= 1 && $1 <= 22) print $2 }' results/HapMap_3_r3_6.bim > results/snp_1_22.txt 
+
+plink --bfile results/HapMap_3_r3_6 --extract results/snp_1_22.txt --make-bed --out results/HapMap_3_r3_7
 
 # Generate a plot of the MAF distribution.
-plink --bfile data/HapMap_3_r3_7 --freq --out results/MAF_check 
+plink --bfile results/HapMap_3_r3_7 --freq --out results/MAF_check 
 
 Rscript --no-save scripts/MAF_check.R
 
 # Remove SNPs with a low MAF frequency.
-plink --bfile data/HapMap_3_r3_7 --maf 0.05 --make-bed --out data/HapMap_3_r3_8 
+plink --bfile results/HapMap_3_r3_7 --maf 0.05 --make-bed --out results/HapMap_3_r3_8 
 # 1073226 SNPs are left 
 # A conventional MAF threshold for a regular GWAS is between 0.01 or 0.05, depending on sample size.
 ```
@@ -475,9 +491,11 @@ Pour un échantillon de petite taille ou des variants très rares, une distribut
 #| eval: false
 #| echo: true
 
-Check the distribution of HWE p-values of all SNPs.
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
 
-plink --bfile data/HapMap_3_r3_8 --hardy --out results/plink # Selecting SNPs with HWE p-value below 0.00001, required for one of the two plot generated by the next Rscript, allows to zoom in on strongly deviating SNPs. 
+# Check the distribution of HWE p-values of all SNPs.
+
+plink --bfile results/HapMap_3_r3_8 --hardy --out results/plink # Selecting SNPs with HWE p-value below 0.00001, required for one of the two plot generated by the next Rscript, allows to zoom in on strongly deviating SNPs. 
 
 awk '{ if ($9 <0.00001) print $0 }' results/plink.hwe > results/plinkzoomhwe.hwe 
 
@@ -487,13 +505,13 @@ Rscript --no-save scripts/hwe.R
 
 # Therefore, we use two steps, first we use a stringent HWE threshold for controls, followed by a less stringent threshold for the case data.
 
-plink --bfile data/HapMap_3_r3_8 --hwe 1e-6 --make-bed --out data/HapMap_hwe_filter_step1
+plink --bfile results/HapMap_3_r3_8 --hwe 1e-6 --make-bed --out results/HapMap_hwe_filter_step1
 
 # The HWE threshold for the cases filters out only SNPs which deviate extremely from HWE.
 
 # This second HWE step only focusses on cases because in the controls all SNPs with a HWE p-value < hwe 1e-6 were already removed
 
-plink --bfile data/HapMap_hwe_filter_step1 --hwe 1e-10 --hwe-all --make-bed --out data/HapMap_3_r3_9
+plink --bfile results/HapMap_hwe_filter_step1 --hwe 1e-10 --hwe-all --make-bed --out results/HapMap_3_r3_9
 ```
 
 ------------------------------------------------------------------------
@@ -532,7 +550,7 @@ Par conséquent, pour générer une liste de SNP non (fortement) corrélés, nou
 ## Créer un set de SNP indépendants avec PLINK
 
 ```{bash}
-#| label: plink combi snp
+#| label: plink indep snp
 #| eval: false
 #| echo: true
 
@@ -542,10 +560,10 @@ plink --bfile input \
 
 ```
 
-| Paramètre | Description |
-|----|----|
-| `<window_size>` | Taille de la fenêtre glissante (en nombre de SNPs) |
-| `<step_size>` | Pas de glissement de la fenêtre (en nombre de SNPs) |
+| Paramètre        | Description                                               |
+|------------------|-----------------------------------------------------------|
+| `<window_size>`  | Taille de la fenêtre glissante (en nombre de SNPs)        |
+| `<step_size>`    | Pas de glissement de la fenêtre (en nombre de SNPs)       |
 | `<r²_threshold>` | Seuil de corrélation LD au-dessus duquel un SNP est exclu |
 
 ------------------------------------------------------------------------
@@ -554,9 +572,11 @@ plink --bfile input \
 
 ```{bash}
 
-plink --bfile data/HapMap_3_r3_9 --exclude data/inversion.txt --range --indep-pairwise 50 5 0.2 --out results/indepSNP # Note, don't delete the file indepSNP.prune.in, we will use this file in later steps of the tutorial.
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
 
-plink --bfile data/HapMap_3_r3_9 --extract results/indepSNP.prune.in --het --out results/R_check # This file contains your pruned data set.
+plink --bfile results/HapMap_3_r3_9 --exclude data/inversion.txt --range --indep-pairwise 50 5 0.2 --out results/indepSNP # Note, don't delete the file indepSNP.prune.in, we will use this file in later steps of the tutorial.
+
+plink --bfile results/HapMap_3_r3_9 --extract results/indepSNP.prune.in --het --out results/R_check # This file contains your pruned data set.
 ```
 
 ------------------------------------------------------------------------
@@ -587,17 +607,19 @@ Rscript --no-save scripts/heterozygosity_outliers_list.R
 
 ## Deux individus à retirer
 
+Ici, deux individus ont un taux d'hétérozygotie s'écartant de plus de 3 SD de la moyenne
+
+Adapter ce fichier pour le rendre compatible avec PLINK, en supprimant tous les guillemets du fichier et en ne sélectionnant que les deux premières colonnes.
+
 ```{bash}
 
-# Ici, deux individus ont un taux d'hétérozygotie s'écartant de plus de 3 SD de la moyenne
-
-# Adapter ce fichier pour le rendre compatible avec PLINK, en supprimant tous les guillemets du fichier et en ne sélectionnant que les deux premières colonnes.
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
 
 sed 's/"// g' results/fail-het-qc.txt | awk '{print$1, $2}'> results/het_fail_ind.txt
 
 # Remove heterozygosity rate outliers.
 
-plink --bfile data/HapMap_3_r3_9 --remove results/het_fail_ind.txt --make-bed --out data/HapMap_3_r3_10
+plink --bfile results/HapMap_3_r3_9 --remove results/het_fail_ind.txt --make-bed --out results/HapMap_3_r3_10
 ```
 
 ------------------------------------------------------------------------
@@ -616,7 +638,7 @@ A l'échelle de l'individu, il s'agit d'une mesure de similarité génétique ut
 
 -   des erreurs dans les données.
 
-L’IBS mesure **le nombre d’allèles identiques partagés entre deux individus** pour un ensemble de SNPs, **indépendamment de leur origine ancestrale**.
+L'IBS mesure **le nombre d'allèles identiques partagés entre deux individus** pour un ensemble de SNPs, **indépendamment de leur origine ancestrale**.
 
 ------------------------------------------------------------------------
 
@@ -636,9 +658,9 @@ Pour un SNP donné :
 
 ## Calcul de l'IBS
 
-Pour **chaque paire d’individus**, PLINK compare les génotypes sur les SNPs disponibles et calcule l’**IBS moyen** (ou distance génétique).
+Pour **chaque paire d'individus**, PLINK compare les génotypes sur les SNPs disponibles et calcule l'**IBS moyen** (ou distance génétique).
 
--   $IBS_0$ : Proportion de SNPs où **aucun allèle n’est partagé**.
+-   $IBS_0$ : Proportion de SNPs où **aucun allèle n'est partagé**.
 
 -   $IBS_1$ : Proportion de SNPs avec **un allèle partagé**.
 
@@ -654,23 +676,23 @@ $distance= 1 - \frac{\text{nombre d’allèles partagés}}{2 \times \text{nombre
 
 **Identical-by-descent (IBD)** : Identique par descendance.
 
-Deux allèles sont IBD s’ils proviennent **d’un ancêtre commun sans mutation** intermédiaire.
+Deux allèles sont IBD s'ils proviennent **d'un ancêtre commun sans mutation** intermédiaire.
 
-**IBD** : L’identité repose sur **la transmission généalogique**.
+**IBD** : L'identité repose sur **la transmission généalogique**.
 
 ------------------------------------------------------------------------
 
 ### Calcul de l'IBD
 
-L’IBD est **estimé statistiquement** à partir des données génotypiques de paires d’individus. La méthode standard consiste à estimer les **probabilités IBD (Z0, Z1, Z2)** :
+L'IBD est **estimé statistiquement** à partir des données génotypiques de paires d'individus. La méthode standard consiste à estimer les **probabilités IBD (Z0, Z1, Z2)** :
 
 | Probabilité |              Signification               |
 |:-----------:|:----------------------------------------:|
-|   **Z0**    | Proba qu’ils partagent **0 allèle IBD**  |
-|   **Z1**    | Proba qu’ils partagent **1 allèle IBD**  |
-|   **Z2**    | Proba qu’ils partagent **2 allèles IBD** |
+|   **Z0**    | Proba qu'ils partagent **0 allèle IBD**  |
+|   **Z1**    | Proba qu'ils partagent **1 allèle IBD**  |
+|   **Z2**    | Proba qu'ils partagent **2 allèles IBD** |
 
-À partir de cela, on peut estimer la **proportion d’allèles IBD partagés** :
+À partir de cela, on peut estimer la **proportion d'allèles IBD partagés** :
 
 $\text{PI_HAT} = Z1 \times 0.5 + Z2 \times 1.0$
 
@@ -681,7 +703,7 @@ $\text{PI_HAT} = Z1 \times 0.5 + Z2 \times 1.0$
 |      Relation       | PI_HAT \~ |   Z0   |   Z1   |  Z2  |
 |:-------------------:|:---------:|:------:|:------:|:----:|
 | Jumeaux monozygotes |   1.00    |   0    |   0    |  1   |
-|   Parent – enfant   |   0.50    |   0    |   1    |  0   |
+|  Parent -- enfant   |   0.50    |   0    |   1    |  0   |
 |    Frères/sœurs     |   0.50    |  0.25  |  0.5   | 0.25 |
 |  Demi-frères/sœurs  |   0.25    |  0.5   |  0.5   |  0   |
 |  Cousins éloignés   |   0.125   | \~0.75 | \~0.25 | \~0  |
@@ -696,8 +718,10 @@ $\text{PI_HAT} = Z1 \times 0.5 + Z2 \times 1.0$
 #| eval: false
 #| echo: true
 
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
 # vérification des liens de parentés pour les individus avec un pi_hat > 0.2
-plink --bfile data/HapMap_3_r3_10 --extract results/indepSNP.prune.in --genome --min 0.2 --out results/pihat_min0.2
+plink --bfile results/HapMap_3_r3_10 --extract results/indepSNP.prune.in --genome --min 0.2 --out results/pihat_min0.2
 
 # La cohorte HapMap contient des individus avec des liens parent-enfant. 
 # Cette commande permet de les visualiser : 
@@ -708,7 +732,7 @@ Rscript --no-save scripts/Relatedness.R
 
 # Nous n'incluons que les fondateurs (individus sans parents dans l'ensemble de données).
 
-plink --bfile data/HapMap_3_r3_10 --filter-founders --make-bed --out data/HapMap_3_r3_11
+plink --bfile results/HapMap_3_r3_10 --filter-founders --make-bed --out results/HapMap_3_r3_11
 
 ```
 
@@ -722,13 +746,13 @@ plink --bfile data/HapMap_3_r3_10 --filter-founders --make-bed --out data/HapMap
 
 ------------------------------------------------------------------------
 
-## Le flag -–genome
+## Le flag ---genome
 
 Cela génère un fichier `.genome` contenant pour chaque paire :
 
--   **PI_HAT** : Estimation de la proportion d’allèles identiques par descendance (proche de 1 pour jumeaux/clones).
+-   **PI_HAT** : Estimation de la proportion d'allèles identiques par descendance (proche de 1 pour jumeaux/clones).
 
--   **Z0, Z1, Z2** : Probabilités d’IBD = 0, 1 ou 2.
+-   **Z0, Z1, Z2** : Probabilités d'IBD = 0, 1 ou 2.
 
 -   **IBS metrics** : IBS0, IBS1, IBS2.
 
@@ -739,8 +763,10 @@ Cela génère un fichier `.genome` contenant pour chaque paire :
 #| eval: false
 #| echo: true
 
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
 # On vérifie les leins de parenté parmi les fondateurs
-plink --bfile data/HapMap_3_r3_11 --extract results/indepSNP.prune.in --genome --min 0.2 --out results/pihat_min0.2_in_founders
+plink --bfile results/HapMap_3_r3_11 --extract results/indepSNP.prune.in --genome --min 0.2 --out results/pihat_min0.2_in_founders
 ```
 
 Le fichier 'pihat_min0.2_in_founders.genome' qu'il reste une paire d'individus avec un pi_hat \> 0.2 parmi les fondateurs.
@@ -756,13 +782,15 @@ Pour chaque paire d'individus apparentés (pi_hat \> 0.2), il est recommandé de
 #| eval: false
 #| echo: true
 
-plink --bfile data/HapMap_3_r3_11 --missing --out results/plink # Use an UNIX text editor (e.g., vi(m) ) to check which individual has the highest call rate in the 'related pair'.
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile results/HapMap_3_r3_11 --missing --out results/plink # Use an UNIX text editor (e.g., vi(m) ) to check which individual has the highest call rate in the 'related pair'.
 
 ```
 
 ------------------------------------------------------------------------
 
-## A exécuter dans un terminal
+## /!\\ A exécuter dans un terminal connecté au cluster
 
 On utilise un éditeur de texte de type `vi` ou un script `R` pour écrire dans un fihcier les FID et IID des participants à écarter. Par exemple :
 
@@ -791,7 +819,9 @@ dont les identifiants se trouvent dans le fichier 0.2_low_call_rate_pihat.txt
 #| eval: false
 #| echo: true
 
-plink --bfile data/HapMap_3_r3_11 --remove results/0.2_low_call_rate_pihat.txt --make-bed --out data/HapMap_3_r3_12
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile results/HapMap_3_r3_11 --remove results/0.2_low_call_rate_pihat.txt --make-bed --out results/HapMap_3_r3_12
 
 ```
 
@@ -823,6 +853,8 @@ Rscript scripts/MDS_merged.R
 
 ------------------------------------------------------------------------
 
+## Nos individus de HapMap sont européens
+
 Le fichier de sortie MDS.pdf montre que nos propres données font partie du groupe européen des données de 1000 génomes. Il n'est donc pas nécessaire de supprimer des sujets.
 
 Cependant, dans le cadre du tutoriel, voici des scripts pour filtrer les valeurs aberrantes de la stratification de la population.
@@ -838,7 +870,7 @@ Sélectionner les individus dans les données HapMap en dessous des seuils de co
 #| eval: false
 #| echo: true
 
-awk '{ if ($4 <-0.04 && $5 >0.03) print $1,$2 }' MDS_merge2.mds > EUR_MDS_merge2
+awk '{ if ($4 <-0.04 && $5 >0.03) print $1,$2 }' data/MDS_merge2.mds > results/EUR_MDS_merge2
 ```
 
 ------------------------------------------------------------------------
@@ -850,7 +882,9 @@ awk '{ if ($4 <-0.04 && $5 >0.03) print $1,$2 }' MDS_merge2.mds > EUR_MDS_merge2
 #| eval: false
 #| echo: true
 
-plink --bfile HapMap_3_r3_12 --keep EUR_MDS_merge2 --make-bed --out HapMap_3_r3_13
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile results/HapMap_3_r3_12 --keep results/EUR_MDS_merge2 --make-bed --out results/HapMap_3_r3_13
 ```
 
 Remarque : comme nos données HapMap ne comportaient pas de valeurs ethniques aberrantes, aucun individu n'a été supprimé à cette étape. Cependant, si nos données avaient inclus des individus en dehors des seuils que nous avons fixés, ces individus auraient été supprimés.
@@ -866,22 +900,26 @@ Effectuer un MDS UNIQUEMENT sur les données HapMap sans valeurs ethniques aberr
 #| eval: false
 #| echo: true
 
-plink --bfile HapMap_3_r3_13 --extract indepSNP.prune.in --genome --out HapMap_3_r3_13 plink --bfile HapMap_3_r3_13 --read-genome HapMap_3_r3_13.genome --cluster --mds-plot 10 --out HapMap_3_r3_13_mds
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile results/HapMap_3_r3_13 --extract results/indepSNP.prune.in --genome --out results/HapMap_3_r3_13 
+
+plink --bfile results/HapMap_3_r3_13 --read-genome results/HapMap_3_r3_13.genome --cluster --mds-plot 10 --out results/HapMap_3_r3_13_mds
 ```
 
 ------------------------------------------------------------------------
 
-## Convertir le .mds en un fichier de covariables plink.
+## Convertir le .mds en un fichier de covariables PLINK
 
 ```{bash}
 #| label: covar conversion
 #| eval: false
 #| echo: true
 
-awk '{print$1, $2, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13}' HapMap_3_r3_13_mds.mds > covar_mds.txt
+awk '{print$1, $2, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13}' results/HapMap_3_r3_13_mds.mds > results/covar_mds.txt
 ```
 
-Les valeurs contenues dans le fichier covar_mds.txt seront utilisées comme covariables, afin d'ajuster la stratification de la population restante, dans lla suite du tutoriel où nous effectuerons une analyse d'association à l'échelle du génome.
+Les valeurs contenues dans le fichier covar_mds.txt seront utilisées comme covariables, afin d'ajuster la stratification de la population restante, dans la suite du tutoriel où nous effectuerons une analyse d'association à l'échelle du génome.
 
 ------------------------------------------------------------------------
 
@@ -897,20 +935,204 @@ Les valeurs contenues dans le fichier covar_mds.txt seront utilisées comme cova
 
 ------------------------------------------------------------------------
 
-## Confusion et gestion des covariables
+## Phénotypes binaires
+
+Dans PLINK, l'association entre les SNP et un résultat binaire :
+
+-   valeur 1 = non affecté
+
+-   valeur 2 = affecté
+
+-   0 et -9 = manquant ;
+
+ce qui précède représente les options par défaut dans PLINK et peut être modifié) peut être testé avec les options --assoc ou --logistic.
 
 ------------------------------------------------------------------------
 
-## Haplotypes, déséquilibre de liaison, imputation, cartographie fine
+## Phénotypes binaires : test du $\chi^2$
+
+L'option --assoc de PLINK effectue un test $\chi^2$ d'association qui ne permet pas l'inclusion de covariables, telles que les composantes principales (PC)/composantes MDS, ce qui la rend moins adaptée aux analyses d'association.
+
+```{bash}
+
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile results/HapMap_3_r3_13 --assoc --out results/assoc_results
+```
 
 ------------------------------------------------------------------------
 
-## Modèles linéaires mixtes
+## Phénotypes binaires : régression logistique
+
+Avec l'option --logistic, une analyse de régression logistique sera effectuée, ce qui permet d'inclure des covariables. L'option --logistic est plus souple que l'option --assoc, mais au prix d'une augmentation du temps de calcul.
+
+```{bash}
+
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile results/HapMap_3_r3_13 --covar results/covar_mds.txt --logistic --hide-covar --out results/logistic_results
+```
+
+Remarque : nous utilisons l'option -hide-covar pour ne montrer que les résultats additifs des SNP dans le fichier de sortie.
+
+On enlève les valeurs manquantes pour éviter les problèmes de visualisation.
+
+```{bash}
+
+awk '!/'NA'/' results/logistic_results.assoc.logistic > results/logistic_results.assoc_2.logistic
+```
 
 ------------------------------------------------------------------------
 
-## Statistiques sommaires
+## Phénotype quantitatif
+
+Model M: $Y ∼ \mu + Z \gamma + X \beta$
+
+|                               |                                           |
+|-------------------------------|-------------------------------------------|
+| $X$ : matrice des génotypes   | $\beta$ : taille d'effet des SNP          |
+| $Y$ : phénotype quantitatif   | $\mu$ : moyenne du phénotype dans la pop° |
+| $Z$ : matrice des covariables | $\gamma$ : taille d'effet des covariables |
+
+```{bash}
+
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile data/HapMap_3_r3_13_simQuantPheno --covar results/covar_mds.txt --linear --hide-covar --out results/linear_results
+
+awk '!/'NA'/' results/linear_results.assoc.linear > results/linear_results.assoc_2.linear
+```
 
 ------------------------------------------------------------------------
 
-## Succès et limites des GWAS
+## Tests multiples
+
+Il existe plusieurs façons de gérer les tests multiples en dehors du seuil de signification conventionnel de $5.10^{-8}$ pour l'ensemble du génome :
+
+-   correction Bonferroni ou FDR
+
+-   permutations
+
+------------------------------------------------------------------------
+
+## P-valeurs ajustées
+
+```{bash}
+
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+plink --bfile results/HapMap_3_r3_13 -assoc --adjust --out results/adjusted_assoc_results
+```
+
+------------------------------------------------------------------------
+
+## Permutations
+
+Il s'agit d'une étape coûteuse en calculs. Pour réduire le temps de calcul, nous n'effectuons ce test que sur un sous-ensemble de SNP du chromosome 22.
+
+La colonne EMP2 fournit la p-valeur corrigée pour les tests multiples.
+
+```{bash}
+
+source /shared/software/miniconda/bin/activate plink-1.90b6.18
+
+# Generate subset of SNPs
+awk '{ if ($4 >= 21595000 && $4 <= 21605000) print $2 }' results/HapMap_3_r3_13.bim > results/subset_snp_chr_22.txt
+# Filter your bfile based on the subset of SNPs generated in the step above.
+plink --bfile results/HapMap_3_r3_13 --extract results/subset_snp_chr_22.txt --make-bed --out results/HapMap_subset_for_perm
+# Perform 1000000 perrmutations.
+plink --bfile results/HapMap_subset_for_perm --assoc --mperm 1000000 --out results/subset_1M_perm_result
+
+# Order your data, from lowest to highest p-value.
+sort -gk 4 results/subset_1M_perm_result.assoc.mperm > results/sorted_subset.txt
+# Check ordered permutation results
+head results/sorted_subset.txt
+```
+
+------------------------------------------------------------------------
+
+## Manhatthan plot (assoc)
+
+```{r}
+
+# location of installation can be changed but has to correspond with the library location 
+
+install.packages("qqman") 
+
+library("qqman")  
+```
+
+```{r}
+
+
+results_as <- read.table("results/assoc_results.assoc", head=TRUE)
+jpeg("results/assoc_manhattan.jpeg", width = 20, height = 12, units = "cm", res=300)
+manhattan(results_as,chr="CHR",bp="BP",p="P",snp="SNP", main = "Manhattan plot: assoc")
+dev.off()  
+```
+
+------------------------------------------------------------------------
+
+## Manhatthan plot (logistic)
+
+```{r}
+
+
+results_log <- read.table("results/logistic_results.assoc_2.logistic", head=TRUE)
+jpeg("results/Logistic_manhattan.jpeg", width = 20, height = 12, units = "cm", res=300)
+manhattan(results_log,chr="CHR",bp="BP",p="P",snp="SNP", main = "Manhattan plot: logistic")
+dev.off()
+
+```
+
+------------------------------------------------------------------------
+
+## QQ-plot (assoc)
+
+```{r}
+
+results_as <- read.table("results/assoc_results.assoc", head=TRUE)
+jpeg("results/QQ-Plot_assoc.jpeg", width = 12, height = 12, units = "cm", res=300)
+qq(results_as$P, main = "Q-Q plot of GWAS p-values : log")
+dev.off()
+
+
+```
+
+------------------------------------------------------------------------
+
+## QQ-plot (logistic)
+
+```{r}
+
+results_log <- read.table("results/logistic_results.assoc_2.logistic", head=TRUE)
+jpeg("results/QQ-Plot_logistic.jpeg", width = 12, height = 12, units = "cm", res=300)
+qq(results_log$P, main = "Q-Q plot of GWAS p-values : log")
+dev.off()
+
+
+```
+
+------------------------------------------------------------------------
+
+## Manhatthan plot (linear)
+
+```{r}
+
+results_lin <- read.table("results/linear_results.assoc_2.linear", head=TRUE)
+jpeg("results/Linear_manhattan.jpeg", width = 20, height = 12, units = "cm", res=300)
+manhattan(results_lin,chr="CHR",bp="BP",p="P",snp="SNP", main = "Manhattan plot: linear")
+dev.off()
+```
+
+------------------------------------------------------------------------
+
+## QQ-plot (linear)
+
+```{r}
+
+results_lin <- read.table("results/linear_results.assoc_2.linear", head=TRUE)
+jpeg("results/QQ-Plot_linear.jpeg", width = 12, height = 12, units = "cm", res=300)
+qq(results_lin$P, main = "Q-Q plot of GWAS p-values : lin")
+dev.off()
+```
