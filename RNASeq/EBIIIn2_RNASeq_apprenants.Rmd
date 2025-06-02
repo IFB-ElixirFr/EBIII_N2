@@ -18,7 +18,7 @@ options(width=120)
 ```
 
 ```{r logo, echo=FALSE, fig.cap="", fig.align="center", out.width='100%',include=TRUE}
-# knitr::include_graphics("logo.png")
+knitr::include_graphics("logo.png")
 ```
 
 Ce fichier Rmarkdown contient tout le matériel de l'atelier RNA-Seq de l'école de Bioinformatique Aviesan/IFB/Inserm niveau 2. Diverses notions seront abordées à travers plusieurs types de designs expérimentaux :
@@ -357,18 +357,18 @@ print(head(counts))
 Commençons par créer l'objet `dds` à partir des comptages et du tableau de design :
 
 ```{r deseq2_batch}
-dds <- DESeqDataSetFromMatrix(countData=counts,
-                              colData=target,
-                              design=~condition)
+
+
+
 ```
 
 **Question** : que révèle l'analyse en composante principale ?
 
 ```{r pca_batch}
-rld <- rlog(dds)
-pca <- PCA(t(assay(rld)), scale.unit=FALSE, ncp=3, graph=FALSE)
-fviz_pca_ind(pca, axes=c(1, 2), repel=TRUE, habillage=factor(target$condition), mean.point=FALSE)
-fviz_pca_ind(pca, axes=c(1, 3), repel=TRUE, habillage=factor(target$condition), mean.point=FALSE)
+
+
+
+
 ```
 
 ## Importance du design dans DESeq2
@@ -376,17 +376,17 @@ fviz_pca_ind(pca, axes=c(1, 3), repel=TRUE, habillage=factor(target$condition), 
 Le code ci-dessous permet de réaliser l'analyse différentielle et visualiser la distribution des p-valeurs brutes :
 
 ```{r results_batch}
-dds <- estimateSizeFactors(dds)
-dds <- estimateDispersions(dds)
-dds <- nbinomWaldTest(dds)
-resultsNames(dds)
-res <- lfcShrink(dds, coef="condition_T_vs_C", type="ashr", quiet=TRUE)
-summary(res, alpha=0.05)
-ggplot(as.data.frame(res), aes(x=pvalue)) + 
-  geom_histogram(color="white", breaks=seq(0, 1, by=0.025)) +
-  xlab("Raw p-value") +
-  ylab("Frequency") + 
-  theme_light()
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 La distribution n'est pas celle attendue car la variabilité (information) générée par l'effet "donneur" n'est pas prise en compte dans le modèle. Nous pouvons visualiser ci-dessous cette variabilité pour un seul gène (bien choisi) :
@@ -410,20 +410,20 @@ ggplot(d, aes(x=condition, y=counts, color=donor, shape=donor)) +
 Il est nécessaire de spécifier dans le design du modèle cet effet "donneur" :
 
 ```{r results_ok_batch}
-dds <- DESeqDataSetFromMatrix(countData=counts,
-                              colData=target,
-                              design=~donor+condition)
-dds <- estimateSizeFactors(dds)
-dds <- estimateDispersions(dds)
-dds <- nbinomWaldTest(dds)
-resultsNames(dds)
-res <- lfcShrink(dds, coef="condition_T_vs_C", type="ashr", quiet=TRUE)
-summary(res, alpha=0.05)
-ggplot(as.data.frame(res), aes(x=pvalue)) + 
-  geom_histogram(color="white", breaks=seq(0, 1, by=0.025)) +
-  xlab("Raw p-value") +
-  ylab("Frequency") + 
-  theme_light()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 **Question** : quelles sont les améliorations apportées par la prise en compte de cet effet "donneur" ?
@@ -739,9 +739,9 @@ target$treatment <- factor(target$treatment, levels=c("C", "T"))
 Le code R ci-dessous permet de créer l'objet `dds` avec le design adéquat et de réaliser les 3 étapes de l'analyse différentielle (normalisation, estimation de la dispersion et modèle linéaire généralisé) :
 
 ```{r analysis_2factors}
-dds <- DESeqDataSetFromMatrix(countData=counts, 
-                              colData=target, 
-                              design=~replicate + strain + treatment + strain:treatment)
+
+
+
 dds <- estimateSizeFactors(dds)
 dds <- estimateDispersions(dds)
 dds <- nbinomWaldTest(dds)
@@ -753,12 +753,12 @@ resultsNames(dds)
 L'analyse en composante principale permet de visualiser la structure des données :
 
 ```{r acp_2factors}
-rld <- rlog(dds)
-pca <- PCA(t(assay(rld)), scale.unit=FALSE, ncp=3, graph=FALSE)
-fviz_pca_ind(pca, axes=c(1, 2), repel=TRUE, mean.point=FALSE, 
-             habillage=factor(paste(target$strain, target$treatment, sep="-")))
-fviz_pca_ind(pca, axes=c(1, 3), repel=TRUE, mean.point=FALSE, 
-             habillage=factor(paste(target$strain, target$treatment, sep="-")))
+
+
+
+
+
+
 ```
 
 Sur le premier plan factoriel formé par les axes 1 et 2 nous visualisons l'effet du traitement (axe 1) et l'effet de la souche (axe 2). Ensuite, l'axe 3 permet de visualiser l'interaction souche-traitement : l'effet du traitement sur les WT (haut vers le bas) est opposé à l'effet du traitement sur KO (bas vers le haut).
@@ -834,18 +834,18 @@ Sur cette figure, les points éloignés de la diagonale (droite $Y = X$) corresp
 On peut sélectionner ces gènes et les visualiser sous la forme d'une heatmap (en ajustant sur l'effet du réplicat) :
 
 ```{r heatmap_2factors}
-int_genes <- d %>%
-  filter(padj_int <= 0.05) %>%
-  pull(gene)
-mat_hm <- assay(rlog(dds))
-mat_hm_adj <- removeBatchEffect(mat_hm, batch=target$replicate)
-pheatmap(mat_hm_adj[int_genes,],
-         scale="row",
-         show_rownames=FALSE,
-         cluster_cols=FALSE,
-         clustering_distance_rows="euclidean",
-         clustering_method="ward.D",
-         color=colorRampPalette(rev(brewer.pal(9, "RdBu")))(200))
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 On voit sur cette heatmap que pour chaque ligne l'effet du traitement est opposé entre les deux souches (e.g. rouge vs bleu pour les WT contre bleu vs rouge pour les KO).
