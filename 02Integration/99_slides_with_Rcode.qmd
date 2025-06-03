@@ -1,0 +1,211 @@
+---
+title: "Slides for Integration with code and equations"
+format: pptx
+execute: 
+  echo: false
+---
+
+```{r}
+#| label: setup
+
+library(dplyr)
+library(MASS)
+library(factoextra)
+library(ggplot2)
+library(componentts)
+library(patchwork)
+library(readr)
+
+source("my_pca.R")
+```
+
+
+## Outliers - one observation is isolated from the others
+
+
+```{r}
+#| label: outlier - one weird value
+#| message: false
+out1 <- read_csv("outlier1.csv")
+res.pca.out1 <- prcomp(out1)
+my_pca(res.pca.out1)
+```
+
+## Outliers - carte très dissymétrique
+
+```{r}
+#| label:  outlier - assymetrical map
+#| message: false
+out2 <- read_csv("outlier2.csv")
+res.pca.out2 <- prcomp(out2)
+my_pca(res.pca.out2)
+```
+
+## Outliers - confusion
+
+
+```{r}
+#| label:  outlier - confusion
+#| message: false
+out3 <- read_csv("outlier3.csv")
+res.pca.out3 <- prcomp(out3[, 1:2])
+lambdas <- res.pca.out3$sdev
+taus <- 100 * lambdas / sum(lambdas)
+zelabels <- sprintf("Dim. %i\n(%0.2f%%)", seq_along(taus), taus)
+
+dat.pca.out3 <- tibble(
+  as_tibble(res.pca.out3$x),
+  out3)
+
+dat.pca.out3 %>%
+  ggplot(aes(x = PC1, y = PC2, color = group, shape = batch)) +
+  geom_hline(yintercept = 0, color = "grey") +
+  geom_vline(xintercept = 0, color = "grey") +
+  geom_point(size = 5) +
+  coord_equal() +
+  labs(x = zelabels[1], y = zelabels[2]) +
+  theme_pca
+```
+
+
+## Sélection du nombre de composantes
+
+
+```{r}
+#| label: nb components
+
+set.seed(345)
+
+scree1 <- mvrnorm(
+  n = 100,
+  rep(0, 6),
+  Sigma = toeplitz(c(1, rep(0.9, 5)))) 
+scree2 <- mvrnorm(
+  n = 100,
+  rep(0, 8),
+  Sigma = Matrix::bdiag(
+    toeplitz(c(1, rep(0.9, 3))),
+    toeplitz(c(1, rep(0.9, 3)))
+    ))
+scree3 <- mvrnorm(
+  n = 100,
+  rep(0, 10),
+  Sigma = diag(10),
+  empirical = TRUE) 
+scree4 <- mvrnorm(
+  n = 100,
+  rep(0, 10),
+  Sigma = diag(10),
+  empirical = FALSE) 
+
+eig1 <- get_eigenvalue(prcomp(scree1))
+eig2 <- get_eigenvalue(prcomp(scree2))
+eig3 <- get_eigenvalue(prcomp(scree3))
+eig4 <- get_eigenvalue(prcomp(scree4))
+
+n1 <- nrow(eig1)
+n2 <- nrow(eig2)
+n3 <- nrow(eig3)
+n4 <- nrow(eig4)
+
+tab <- rbind(
+  eig1 %>%
+    mutate(
+      Dim = factor(
+        x = 1:n1,
+        labels = sprintf("Dim. %i", 1:n1)),
+      .before = 1) %>%
+    mutate(scree = "scree1"),
+  eig2 %>%
+    mutate(
+      Dim = factor(
+        x = 1:n2,
+        labels = sprintf("Dim. %i", 1:n2)),
+      .before = 1) %>%
+    mutate(scree = "scree2"),
+  eig3 %>%
+    mutate(
+      Dim = factor(
+        x = 1:n3,
+        labels = sprintf("Dim. %i", 1:n3)),
+      .before = 1) %>%
+    mutate(scree = "scree3"),
+  eig4 %>%
+    mutate(
+      Dim = factor(
+        x = 1:n4,
+        labels = sprintf("Dim. %i", 1:n4)),
+      .before = 1) %>%
+    mutate(scree = "scree4")
+)
+
+tab %>%
+  ggplot(aes(Dim, variance.percent)) +
+  geom_col(fill = "steelblue") + 
+  facet_wrap(~scree, scales = "free") + 
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_blank()) + 
+  labs(
+    x = "",
+    y = "Pourcentage de variance expliquée")
+
+```
+
+## Elbow rule
+
+```{r}
+#| label: elbow
+
+I <- 500
+J <- 25
+
+x <- mvrnorm(
+  n = I,
+  mu = rep(0, J),
+  Sigma = Matrix::bdiag(
+    lapply(
+      X = 1:(J/5), 
+      \(i) i * toeplitz(c(1, rep(0.9, (J/5)-1)))
+    )))
+
+res.pca.250 <- prcomp(x)
+eig.250 <- get_eig(res.pca.250)
+
+fviz_screeplot(res.pca.250, ncp = J)
+
+```
+
+
+## Permutations rule
+
+```{r}
+#| label: permutation
+#| cache: true
+
+B <- 1000
+lambdas.perm <- matrix(NA, J, B)
+for (b in 1:B) {
+  xperm <- matrix(x[sample(1:(I*J))], I, J)
+  lambdas.perm[, b] <- prcomp(xperm)$sdev**2
+}
+  
+tab.perm <- tibble(
+  dim = factor(1:25),
+  m = rowMeans(lambdas.perm),
+  q025 = apply(lambdas.perm, 1, quantile, 0.025),
+  q975 = apply(lambdas.perm, 1, quantile, 0.975))
+  
+
+fviz_screeplot(res.pca.250, ncp = J) +
+  geom_ribbon(
+    data = tab.perm, 
+    mapping = aes(ymin = q025, ymax = q975) ,
+    color = "red",
+    fill = "red")
+
+
+```
+
+
