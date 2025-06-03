@@ -19,6 +19,8 @@ library(patchwork)
 theme_set(theme_bw())
 ```
 
+
+
 ## Import COVID data
 
 ```{r import}
@@ -54,6 +56,16 @@ pheatmap(
   clustering_method = "ward.D2",
   cellwidth = 20, cellheight = 20, 
   border_color = "black")
+```
+
+
+## Pheatmap demo
+
+```{r pheatmap demo}
+library(pheatmap)
+M <- matrix(rnorm(35), 5, 7)
+dimnames(M) <- list(letters[1:5], LETTERS[1:7])
+pheatmap(mat = M, color = 1:3, legend_breaks = c(-2, 0, 2))
 ```
 
 
@@ -111,6 +123,24 @@ covid |>
 
 ::::::
  
+## Barplot of the number of observations per subject
+
+```{r}
+covid |>
+  ggplot(aes(id, fill = id)) + 
+  geom_bar()
+```
+
+## Implémentation dans ggplot2
+
+-----------  -------- -------------------
+ Données     `data`    Les données à représenter. Chaque ligne représente un élément à représenter graphiquement.
+Géométries   `geom_`   Les formes à créer pour représenter les données. Cela peut être des points, des lignes, des surfaces etc.
+Esthétiques  `aes()`   Les paramètres esthétiques de ces formes. Par exemple la position, la couleur, la taille, la forme, la transparence etc.
+ Échelles    `scale_`  Des fonctions permettant de paramétrer la transformation de données en formes ou en objets graphiques. Par exemple la fonction `scale_color_manual` permet de choisir soi-même les couleurs à utiliser dans un graphique. 
+-----------  -------- --------------------
+
+ 
 ## Patchwork
 
 
@@ -133,4 +163,8 @@ il1b <- covid |>
 
 
 ```
+
+
+
+
 
