@@ -12,7 +12,6 @@ library(dplyr)
 library(MASS)
 library(factoextra)
 library(ggplot2)
-library(componentts)
 library(patchwork)
 library(readr)
 
