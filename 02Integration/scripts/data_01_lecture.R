@@ -25,4 +25,3 @@ all(rownames(loc) == rownames(gex))
 
 ## Création de la liste pour RGCCA
 pHGG <- list(GE = ge, CGH = cgh, LOC= loc)
-
