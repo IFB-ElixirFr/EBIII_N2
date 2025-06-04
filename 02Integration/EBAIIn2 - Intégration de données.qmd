@@ -2,56 +2,10 @@
 title: "EBAIIn2 - Intégration de données"
 author: Cathy Philippe
 format: 
-  revealjs:
-    theme: simple
+  pptx: 
+    reference-doc: template.pptx
 editor: visual
 ---
-
-# Rappels sur les méthodes factorielles
-
-comment on les utilise en pratique. Répondre aux questions des méthodes factorielles : combien de composantes choisir ? Comment interpréter une carte des individus et un cercle de corrélation ?
-
-------------------------------------------------------------------------
-
-# Présentation des données GliomaData
-
-## La localisation des gliomes malins pédiatriques
-
-::: r-stack
-![](pHGG_loc.png)
-:::
-
-------------------------------------------------------------------------
-
-## Les données omiques disponibles
-
-## ![](pHGG_omics.png)
-
-------------------------------------------------------------------------
-
-## Le design d'intégration ![](pHGG_design.png)
-
-------------------------------------------------------------------------
-
-## Questions
-
-### Emplacement de la tumeur (hémisphères, ligne médiane, tronc cérébral)
-
--   Quels sont les gènes et les segments caractéristiques de chaque localisation, qui pourraient nous renseigner sur la cellule d'origine des tumeurs ?
-
-### Survie globale
-
--   L'expression des gènes et les aberrations du nombre de copies ont-elles une influence sur la survie globale ? si oui, laquelle ?
-
-### Améliorer la classification des gliomes malins pédiatriques, notamment son pouvoir pronostique.
-
-------------------------------------------------------------------------
-
-## Qu'est-ce qu'une méthode factorielle et surtout à quoi ça sert ?
-
-Lesquelles connaissez-vous ou avez-vous déjà utilisées ? UMAP, t-SNE, MDS, PCoA, ICA etc. Sondage (wooclap)
-
-------------------------------------------------------------------------
 
 ## Le package gliomaData
 
@@ -184,14 +138,87 @@ fviz_pca_var(res.pca.scale, select.var = list(contrib = 7), repel = TRUE)
 
 ------------------------------------------------------------------------
 
-## Exercice pratique "puzzle"
+## Paramètre `blocks`
 
-associer les graphes de l'ACP des données d'expression de gliomaData avec leur définition
+```{r, echo=TRUE}
 
-1.  Correspondances (wooclap)
+class(ge_cgh_locIGR$multiblocks)
+names(ge_cgh_locIGR$multiblocks)
 
-2.  Graphe des pourcentages de variance expliquée (pour sélectionner le nombre de composantes principales optimal)
+my_blocks = ge_cgh_locIGR$multiblocks
+```
 
-3.  Carte des individus (pour en déduire des clusters de patients)
+------------------------------------------------------------------------
 
-4.  Cercle des corrélations (pour en déduire le lien entre gènes et groupes de patients). Oh non, on ne voit rien !!
+## Paramètre `connection`
+
+```{r, echo=TRUE}
+design = matrix(rep(1,9), nrow=3, ncol=3)
+D = diag(1, 3)
+
+my_design = design - D
+
+my_design
+```
+
+------------------------------------------------------------------------
+
+## Paramètre `response`
+
+```{r, echo=TRUE, eval=FALSE}
+...
+response = 3
+...
+```
+
+------------------------------------------------------------------------
+
+## RGCCA sur gliomaData
+
+```{r, echo=TRUE}
+
+library(RGCCA)
+
+my_rgcca_fit = rgcca(blocks = my_blocks, connection = my_design, response = 3, ncomp=2)
+
+print(my_rgcca_fit)
+
+```
+
+------------------------------------------------------------------------
+
+## Graphe des poids block 1
+
+```{r, echo=TRUE}
+
+plot(my_rgcca_fit, type = "weight", block = 1, display_order = T, n_mark = 50)
+```
+
+------------------------------------------------------------------------
+
+## Graphe des poids block 2
+
+```{r, echo=TRUE}
+plot(my_rgcca_fit, type = "weight", block = 2, display_order = T, n_mark = 50)
+```
+
+------------------------------------------------------------------------
+
+## Graphe des poids block 3
+
+```{r, echo=TRUE}
+plot(my_rgcca_fit, type = "weight", block = 3, display_order = T)
+```
+
+------------------------------------------------------------------------
+
+## Graphes des individus
+
+```{r, echo=TRUE}
+
+plot(my_rgcca_fit,
+  type = "sample", block = 1:2,
+  comp = rep(1, 2), resp = as.factor(ge_cgh_locIGR$ylabel)
+)
+
+```
