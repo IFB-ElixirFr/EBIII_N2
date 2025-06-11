@@ -1,0 +1,112 @@
+---
+title: "La figure 2 de Ong et al. 2020"
+author: "Vincent Guillemot"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+## echo = TRUE : le code sera affiché dans le rapport
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(readr)
+```
+
+Je cherche à reproduire la figure de Ong et al. 2020 représentant l'expression de CD4 pour les 3 patients en fonction du temps.
+
+Je commence par importer les données avec la fonction `readr::read_csv` : cet import produira une "tibble".
+
+```{r data import}
+covid <- read_csv("covid.csv")
+```
+
+## Représentation sans les témoins
+
+Représenter l'expressiond e CD4 pour les 3 patients nécessite de filtrer au préalable les données, et ensuite de faire le graphe.
+
+```{r without HC}
+covid |>
+  filter(status == "nCOV") |>
+  ggplot(aes(
+    x = time, y = CD4, 
+    color = id, shape = id)) + 
+  geom_point() + 
+  geom_line() +
+  scale_x_continuous(breaks = 3:20) +
+  theme_classic() +
+  labs(
+    x = "Days after illness onset",
+    y = "Normalized log2 expression",
+    title = "CD4",
+    color = "", shape = "") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_manual(values = c(
+    "Case1" = "red", 
+    "Case2" = "blue",
+    "Case3" = "orange"))
+```
+
+## Représentation avec les témoins
+
+D'après les informations données dans l'article,
+
+> *"Dotted line and gray shaded areas indicate mean gene expression $\pm$ SD for healthy controls."*
+
+Ajouter l'information sur les témoins est un peu technique, et beaucoup de solutions différentes existent. J'ai choisi de :
+
+  * calculer la moyenne de l'expression de CD4 des témoins,
+  * calculer la moyenne $\pm$ l'écart-type pour définir les limites hautes et basses de la bande grise
+  * répéter ces valeurs dix fois dans une table
+  * ajouter à cette table une colonne "time" qui représente des valeurs de temps croissantes
+
+Notez que j'utilise l'option de chunk `results = 'asis'` pour que la table soit joliment présentée dans le document HTML.
+
+```{r hc table, results = 'asis'}
+hc <- covid %>%
+  filter(status == "HC") |>
+  select(status, CD4) |>
+  reframe(
+    time = seq(3, 20, length = 10),
+    ymin = rep(mean(CD4) - sd(CD4), 10),
+    ymax = rep(mean(CD4) + sd(CD4), 10),
+    y = rep(mean(CD4), 10))
+
+pander::pandoc.table(round(hc, 3))
+```
+
+Pour réaliser le graphe complet, j'utilise la géométrie `geom_ribbon`, et je change les données de cette géométrie. Attention à l'argument supplémentaire `inherit.aes = FALSE` de cette géométrie : cet argument permet de "réinitialiser" les paramètres esthétiques de cette géométrie et de ne pas hériter de ceux déclarés initialement. C'est important parce que certains paramètres ne sont pas compatibles avec la géométrie `geom_ribbon` (p.ex. `shape`).
+
+```{r plot with HC}
+covid |>
+  filter(status == "nCOV") |>
+  ggplot(aes(
+    x = time, y = CD4, 
+    color = id, shape = id)) + 
+  geom_ribbon(
+    mapping = aes(
+      x = time, ymin = ymin, 
+      ymax = ymax, y = y),
+    data = hc,
+    fill = "lightgrey",
+    inherit.aes = FALSE) +
+  geom_hline(
+    yintercept = hc$y,
+    linetype = "dashed") + 
+  geom_point() + 
+  geom_line() +
+  scale_color_manual(values = c(
+    "Case1" = "red", 
+    "Case2" = "blue",
+    "Case3" = "orange")) + 
+  scale_x_continuous(
+    limits = c(3, 20),
+    expand = c(0, 0)) +  
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(
+    x = "Days after illness onset",
+    y = bquote(Normalized~log[2]~expression),
+    title = "CD4",
+    color = "", shape = "")
+```

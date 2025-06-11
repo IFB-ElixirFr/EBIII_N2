@@ -15,7 +15,34 @@ library(ggplot2)
 library(patchwork)
 library(readr)
 
-source("my_pca.R")
+source("scripts/my_pca.R")
+```
+
+## Parcimonie
+
+```{r}
+#| label: sparsity
+#| echo: true
+
+random_sparsity <- function(coefs, nb) {
+  out <- coefs
+  out[sample(length(out, nb))] <- 0
+  return(out)
+}
+
+```
+
+## SGCCA
+
+
+```{r}
+#| echo: true
+#| eval: false
+
+res.sgcca <- rgcca(
+  blocks = pHGG,
+  sparsity = c(0.1, 0.1, 1),
+  response = 3)
 ```
 
 
@@ -25,7 +52,7 @@ source("my_pca.R")
 ```{r}
 #| label: outlier - one weird value
 #| message: false
-out1 <- read_csv("outlier1.csv")
+out1 <- read_csv("data/private/outlier1.csv")
 res.pca.out1 <- prcomp(out1)
 my_pca(res.pca.out1)
 ```
@@ -35,7 +62,7 @@ my_pca(res.pca.out1)
 ```{r}
 #| label:  outlier - assymetrical map
 #| message: false
-out2 <- read_csv("outlier2.csv")
+out2 <- read_csv("data/private/outlier2.csv")
 res.pca.out2 <- prcomp(out2)
 my_pca(res.pca.out2)
 ```
@@ -46,7 +73,7 @@ my_pca(res.pca.out2)
 ```{r}
 #| label:  outlier - confusion
 #| message: false
-out3 <- read_csv("outlier3.csv")
+out3 <- read_csv("data/private/outlier3.csv")
 res.pca.out3 <- prcomp(out3[, 1:2])
 lambdas <- res.pca.out3$sdev
 taus <- 100 * lambdas / sum(lambdas)
