@@ -6,3 +6,5 @@ EBIII_N2.Rproj
 02Integration/.Rhistory
 
 DNAseq/GWAS_tutorial/data/*
+DNAseq/GWAS_tutorial/data-nogit
+DNAseq/GWAS_tutorial/data-nogit/*
